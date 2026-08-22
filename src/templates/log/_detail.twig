@@ -1,0 +1,48 @@
+{% extends '_layouts/cp' %}
+
+{% set title = 'Log entry'|t('bird') %}
+{% set selectedSubnavItem = 'log' %}
+{% set crumbs = [
+    { label: 'Connection log'|t('bird'), url: url('bird/log') }
+] %}
+
+{% block content %}
+    <div class="pane">
+        <table class="data fullwidth">
+            <tbody>
+                <tr><th scope="row">{{ 'When'|t('bird') }}</th><td>{{ entry.dateCreated ? entry.dateCreated|datetime('long') : '—' }}</td></tr>
+                <tr><th scope="row">{{ 'Action'|t('bird') }}</th><td>{{ entry.action }}</td></tr>
+                <tr><th scope="row">{{ 'Level'|t('bird') }}</th><td>{{ entry.level }}</td></tr>
+                <tr><th scope="row">{{ 'Status'|t('bird') }}</th><td>{{ entry.statusCode ?? '—' }}</td></tr>
+                <tr><th scope="row">{{ 'Duration'|t('bird') }}</th><td>{{ entry.durationMs is not null ? entry.durationMs ~ 'ms' : '—' }}</td></tr>
+                <tr>
+                    <th scope="row">{{ 'Order'|t('bird') }}</th>
+                    <td>
+                        {% if entry.orderId %}
+                            <a href="{{ cpUrl('commerce/orders/' ~ entry.orderId) }}">#{{ entry.orderId }}</a>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr><th scope="row">{{ 'From'|t('bird') }}</th><td><code>{{ entry.ip ?? '—' }}</code></td></tr>
+                <tr><th scope="row">{{ 'Summary'|t('bird') }}</th><td>{{ entry.summary ?? '' }}</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    {% if entry.message %}
+        <h2>{{ 'Message'|t('bird') }}</h2>
+        <div class="pane"><pre style="overflow-x: auto;"><code>{{ entry.message }}</code></pre></div>
+    {% endif %}
+
+    {% if entry.request %}
+        <h2>{{ 'Request'|t('bird') }}</h2>
+        <div class="pane"><pre style="overflow-x: auto;"><code>{{ entry.request }}</code></pre></div>
+    {% endif %}
+
+    {% if entry.response %}
+        <h2>{{ 'Response'|t('bird') }}</h2>
+        <div class="pane"><pre style="overflow-x: auto; max-height: 480px;"><code>{{ entry.response }}</code></pre></div>
+    {% endif %}
+{% endblock %}

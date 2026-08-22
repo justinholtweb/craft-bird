@@ -1,0 +1,113 @@
+{% extends '_layouts/cp' %}
+
+{% set title = document.getLabel() %}
+{% set selectedSubnavItem = 'documents' %}
+{% set crumbs = [
+    { label: 'Moneybird documents'|t('bird'), url: url('bird/documents') }
+] %}
+
+{% block actionButton %}
+    {% set moneybirdUrl = document.getMoneybirdUrl() %}
+    <div class="buttons">
+        {% if moneybirdUrl %}
+            <a class="btn" href="{{ moneybirdUrl }}" rel="noopener noreferrer" target="_blank">{{ 'Open in Moneybird'|t('bird') }}</a>
+        {% endif %}
+        {% if canPush %}
+            <button type="button" class="btn" id="bird-refresh">{{ 'Refresh from Moneybird'|t('bird') }}</button>
+            <button type="button" class="btn" id="bird-forget">{{ 'Forget locally'|t('bird') }}</button>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="pane">
+        <table class="data fullwidth">
+            <tbody>
+                <tr><th scope="row">{{ 'Kind'|t('bird') }}</th><td>{{ document.getIsCredit() ? 'Credit note'|t('bird') : 'Invoice'|t('bird') }}</td></tr>
+                <tr><th scope="row">{{ 'Document type'|t('bird') }}</th><td><code>{{ document.documentType }}</code></td></tr>
+                <tr><th scope="row">{{ 'State'|t('bird') }}</th><td><span class="status {{ document.getStatusColor() }}"></span> {{ document.getStateLabel() }}</td></tr>
+                <tr><th scope="row">{{ 'Reference'|t('bird') }}</th><td>{{ document.reference ?? '—' }}</td></tr>
+                <tr><th scope="row">{{ 'Invoice number'|t('bird') }}</th><td>{{ document.invoiceNumber ?? '—' }}</td></tr>
+                <tr><th scope="row">{{ 'Moneybird id'|t('bird') }}</th><td><code>{{ document.moneybirdId ?? '—' }}</code></td></tr>
+                <tr><th scope="row">{{ 'VAT treatment'|t('bird') }}</th><td>{{ document.taxTreatment ?? '—' }}</td></tr>
+                <tr><th scope="row">{{ 'Total'|t('bird') }}</th><td>{{ document.total|commerceCurrency(document.currency ?? 'EUR') }}</td></tr>
+                <tr><th scope="row">{{ 'Paid'|t('bird') }}</th><td>{{ document.totalPaid|commerceCurrency(document.currency ?? 'EUR') }}</td></tr>
+                <tr><th scope="row">{{ 'Sent'|t('bird') }}</th><td>{{ document.dateSent ? document.dateSent|datetime('short') : '—' }}</td></tr>
+                <tr><th scope="row">{{ 'Last synced'|t('bird') }}</th><td>{{ document.dateSynced ? document.dateSynced|datetime('short') : '—' }}</td></tr>
+                <tr><th scope="row">{{ 'Attempts'|t('bird') }}</th><td>{{ document.attempts }}</td></tr>
+                <tr>
+                    <th scope="row">{{ 'Order'|t('bird') }}</th>
+                    <td>
+                        {% if order %}
+                            <a href="{{ cpUrl('commerce/orders/' ~ order.id) }}">{{ order.reference ?? order.getShortNumber() }}</a>
+                        {% else %}
+                            {{ 'Deleted'|t('bird') }}
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    {% if document.lastError %}
+        <h2>{{ 'Last error'|t('bird') }}</h2>
+        <div class="pane"><p class="error">{{ document.lastError }}</p></div>
+    {% endif %}
+
+    {% if isPro and entries|length %}
+        <h2>{{ 'Recent activity'|t('bird') }}</h2>
+        <div class="pane">
+            <table class="data fullwidth">
+                <tbody>
+                    {% for entry in entries %}
+                        <tr>
+                            <td class="nowrap"><a href="{{ url('bird/log/' ~ entry.id) }}">{{ entry.dateCreated ? entry.dateCreated|datetime('short') : '—' }}</a></td>
+                            <td>{{ entry.action }}</td>
+                            <td>
+                                <span class="status {{ entry.level == 'error' ? 'red' : (entry.level == 'warning' ? 'orange' : 'green') }}"></span>
+                                {{ entry.summary ?? '' }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% js %}
+(function() {
+    var documentId = {{ document.id }};
+
+    function run(action, button, then) {
+        button.classList.add('loading');
+        Craft.sendActionRequest('POST', action, { data: { documentId: documentId } })
+            .then(function(response) {
+                Craft.cp.displayNotice(response.data.message);
+                then();
+            })
+            .catch(function(error) {
+                var message = (error && error.response && error.response.data && error.response.data.message)
+                    || {{ 'That didn’t work.'|t('bird')|json_encode|raw }};
+                Craft.cp.displayError(message);
+            })
+            .finally(function() { button.classList.remove('loading'); });
+    }
+
+    var refresh = document.getElementById('bird-refresh');
+    if (refresh) {
+        refresh.addEventListener('click', function() {
+            run('bird/documents/refresh', refresh, function() { window.location.reload(); });
+        });
+    }
+
+    var forget = document.getElementById('bird-forget');
+    if (forget) {
+        forget.addEventListener('click', function() {
+            run('bird/documents/forget', forget, function() {
+                window.location.href = {{ url('bird/documents')|json_encode|raw }};
+            });
+        });
+    }
+})();
+{% endjs %}

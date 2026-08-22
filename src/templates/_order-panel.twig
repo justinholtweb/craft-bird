@@ -1,0 +1,141 @@
+{#
+    Rendered into Commerce's own order edit screen through the
+    `cp.commerce.order.edit.details` hook.
+#}
+<div class="bird-panel" style="margin-top: 24px;">
+    <h3>{{ 'Moneybird'|t('bird') }}</h3>
+
+    {% if documents|length %}
+        <table class="data fullwidth">
+            <thead>
+                <tr>
+                    <th scope="col">{{ 'Document'|t('bird') }}</th>
+                    <th scope="col">{{ 'State'|t('bird') }}</th>
+                    <th scope="col">{{ 'Total'|t('bird') }}</th>
+                    <th scope="col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for document in documents %}
+                    <tr>
+                        <td>
+                            <a href="{{ url('bird/documents/' ~ document.id) }}">{{ document.getLabel() }}</a>
+                            {% if document.getIsCredit() %}
+                                <span class="light">{{ '(credit)'|t('bird') }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="status {{ document.getStatusColor() }}"></span>
+                            {{ document.getStateLabel() }}
+                        </td>
+                        <td>{{ document.total|commerceCurrency(document.currency ?? 'EUR') }}</td>
+                        <td class="thin">
+                            {% set moneybirdUrl = document.getMoneybirdUrl() %}
+                            {% if moneybirdUrl %}
+                                <a href="{{ moneybirdUrl }}" rel="noopener noreferrer" target="_blank">{{ 'Open in Moneybird'|t('bird') }}</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% set failed = documents|filter(d => d.state == 'failed')|first %}
+        {% if failed and failed.lastError %}
+            <p class="error" style="margin-top: 10px;">{{ failed.lastError }}</p>
+        {% endif %}
+    {% else %}
+        <p class="light">{{ 'Nothing has been booked for this order yet.'|t('bird') }}</p>
+    {% endif %}
+
+    <p class="light" style="margin-top: 10px;">
+        {{ 'VAT: {label}'|t('bird', { label: vat.label }) }}
+        {%- if vat.country %} · {{ vat.country }}{% endif %}
+        {%- if vat.vatNumber %} · <code>{{ vat.vatNumber }}</code>{% endif %}
+    </p>
+
+    <div class="buttons" style="margin-top: 10px;">
+        <button type="button" class="btn" data-bird-preview>{{ 'Preview invoice'|t('bird') }}</button>
+
+        {% if canPush and isReady %}
+            <button type="button" class="btn submit" data-bird-push>{{ documents|length ? 'Send again'|t('bird') : 'Send to Moneybird'|t('bird') }}</button>
+
+            {% if isPro %}
+                <button type="button" class="btn" data-bird-credit>{{ 'Credit refunds'|t('bird') }}</button>
+            {% endif %}
+        {% elseif canPush %}
+            <span class="light">{{ 'Bird is not connected to Moneybird yet.'|t('bird') }}</span>
+        {% endif %}
+    </div>
+</div>
+
+{% js %}
+(function() {
+    var orderId = {{ order.id }};
+
+    function notify(response) {
+        var message = (response && response.data && response.data.message) || '';
+        Craft.cp.displayNotice(message);
+        window.location.reload();
+    }
+
+    function complain(error) {
+        var message = (error && error.response && error.response.data && error.response.data.message)
+            || {{ 'Moneybird refused that.'|t('bird')|json_encode|raw }};
+        Craft.cp.displayError(message);
+    }
+
+    var preview = document.querySelector('[data-bird-preview]');
+    if (preview) {
+        preview.addEventListener('click', function() {
+            preview.classList.add('loading');
+            Craft.sendActionRequest('GET', 'bird/documents/preview', { params: { orderId: orderId } })
+                .then(function(response) {
+                    var modal = document.createElement('div');
+                    modal.className = 'modal';
+                    modal.style.cssText = 'padding: 24px; overflow: auto; max-height: 70vh;';
+
+                    var summary = document.createElement('p');
+                    summary.textContent = 'VAT: ' + response.data.treatment
+                        + ' · order ' + response.data.orderTotal
+                        + ' · invoice ' + response.data.invoiceTotal
+                        + (Math.abs(response.data.rounding) >= 0.01 ? ' · rounding ' + response.data.rounding : '');
+                    modal.appendChild(summary);
+
+                    var pre = document.createElement('pre');
+                    pre.style.cssText = 'white-space: pre-wrap; word-break: break-word;';
+                    // JSON in as text, never as markup.
+                    pre.textContent = response.data.json;
+                    modal.appendChild(pre);
+
+                    document.body.appendChild(modal);
+                    new Garnish.Modal(modal, { resizable: true });
+                })
+                .catch(complain)
+                .finally(function() { preview.classList.remove('loading'); });
+        });
+    }
+
+    var push = document.querySelector('[data-bird-push]');
+    if (push) {
+        push.addEventListener('click', function() {
+            push.classList.add('loading');
+            Craft.sendActionRequest('POST', 'bird/documents/push', { data: { orderId: orderId } })
+                .then(notify)
+                .catch(complain)
+                .finally(function() { push.classList.remove('loading'); });
+        });
+    }
+
+    var credit = document.querySelector('[data-bird-credit]');
+    if (credit) {
+        credit.addEventListener('click', function() {
+            credit.classList.add('loading');
+            Craft.sendActionRequest('POST', 'bird/documents/credit-refunds', { data: { orderId: orderId } })
+                .then(notify)
+                .catch(complain)
+                .finally(function() { credit.classList.remove('loading'); });
+        });
+    }
+})();
+{% endjs %}

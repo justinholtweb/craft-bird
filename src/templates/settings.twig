@@ -1,0 +1,664 @@
+{# Field names carry no `settings[…]` prefix: `craft\base\Plugin::settingsResponse()` runs this
+   template's output through `View::namespaceInputs(…, 'settings')`, so a name written as
+   `settings[foo]` here posts as `settings[settings][foo]` and saves nothing at all — the screen
+   looks perfect, Craft says "Plugin settings saved", and every edit is silently discarded. #}
+{% import '_includes/forms' as forms %}
+
+{# Pro-only fields are shown and saved on Lite rather than disabled. Craft persists only the keys
+   a save actually posts (`Plugins::savePluginSettings()` calls `toArray(array_keys($settings))`),
+   so a disabled input drops its setting out of project config altogether. The runtime gates every
+   Pro feature on `isPro()` anyway, and settings kept now are settings that work on upgrade. #}
+{% set isPro = plugin.isPro() %}
+{% set commerceReady = craft.app.plugins.isPluginEnabled('commerce') %}
+{% set statusOptions = commerceReady ? craft.bird.orderStatusOptions() : [] %}
+
+{% set taxRows = [] %}
+{% for percentage, taxRateId in settings.getTaxRateMap() %}
+    {% set taxRows = taxRows|merge([{ percentage: percentage, taxRateId: taxRateId }]) %}
+{% endfor %}
+
+{% set ossRows = [] %}
+{% for key, taxRateId in settings.getOssTaxRateMap() %}
+    {% set ossRows = ossRows|merge([{ key: key, taxRateId: taxRateId }]) %}
+{% endfor %}
+
+{% set ledgerRows = [] %}
+{% for productType, ledgerAccountId in settings.getLedgerAccountMap() %}
+    {% set ledgerRows = ledgerRows|merge([{ productType: productType, ledgerAccountId: ledgerAccountId }]) %}
+{% endfor %}
+
+{% if not commerceReady %}
+    <div class="pane">
+        <p class="error">{{ 'Craft Commerce is not installed or enabled. Bird needs it to do anything.'|t('bird') }}</p>
+    </div>
+{% endif %}
+
+{% if not isPro %}
+    <div class="pane" style="border-left: 3px solid #cdd8e4;">
+        <p>
+            <strong>{{ 'You’re running Bird Lite.'|t('bird') }}</strong>
+            {{ 'The connection log, One Stop Shop tax rates, per-product-type ledger accounts, credit notes for refunds, sending invoices from Moneybird and the paid-invoice webhook are Pro features. Their settings are shown below but have no effect until you upgrade.'|t('bird') }}
+        </p>
+    </div>
+{% endif %}
+
+{# ------------------------------------------------------------------ #}
+<h2>{{ 'Connection'|t('bird') }}</h2>
+
+<div class="pane">
+    <p>
+        {{ 'Create a token at moneybird.com under your profile → “Applications”, then pick the administration to book into. A token is as powerful as your password, so keep it in an environment variable rather than in project config.'|t('bird') }}
+    </p>
+</div>
+
+{{ forms.autosuggestField({
+    label: 'API token'|t('bird'),
+    instructions: 'Sent as `Authorization: Bearer …`.'|t('bird'),
+    id: 'apiToken',
+    name: 'apiToken',
+    value: settings.apiToken,
+    suggestEnvVars: true
+}) }}
+
+{{ forms.autosuggestField({
+    label: 'Administration'|t('bird'),
+    instructions: 'The number Moneybird puts in its own URLs, e.g. `https://moneybird.com/123456789/…`.'|t('bird'),
+    id: 'administrationId',
+    name: 'administrationId',
+    value: settings.administrationId,
+    suggestEnvVars: true
+}) }}
+
+<div class="field">
+    <div class="buttons">
+        <button type="button" class="btn" id="bird-test">{{ 'Test connection'|t('bird') }}</button>
+        <button type="button" class="btn" id="bird-administrations">{{ 'List administrations'|t('bird') }}</button>
+    </div>
+    <p class="light" id="bird-test-result"></p>
+</div>
+
+{# ------------------------------------------------------------------ #}
+<hr>
+<h2>{{ 'Documents'|t('bird') }}</h2>
+
+{{ forms.selectField({
+    label: 'Document type'|t('bird'),
+    instructions: 'A **sales invoice** lets Moneybird number, style and send the invoice. An **external sales invoice** books an invoice your shop already issued under its own number — no PDF, no sending, just the revenue and the VAT.'|t('bird'),
+    id: 'documentType',
+    name: 'documentType',
+    options: [
+        { label: 'Sales invoice'|t('bird'), value: 'sales_invoice' },
+        { label: 'External sales invoice'|t('bird'), value: 'external_sales_invoice' }
+    ],
+    value: settings.documentType
+}) }}
+
+{{ forms.selectField({
+    label: 'Send to Moneybird when'|t('bird'),
+    id: 'trigger',
+    name: 'trigger',
+    options: [
+        { label: 'The order is paid'|t('bird'), value: 'paid' },
+        { label: 'The order is completed'|t('bird'), value: 'complete' },
+        { label: 'The order reaches a status'|t('bird'), value: 'status' },
+        { label: 'Never — only when I say so'|t('bird'), value: 'manual' }
+    ],
+    value: settings.trigger,
+    toggle: true,
+    targetPrefix: '.bird-trigger-'
+}) }}
+
+<div class="bird-trigger-status {{ settings.trigger == 'status' ? '' : 'hidden' }}">
+    {{ forms.selectField({
+        label: 'Trigger status'|t('bird'),
+        id: 'triggerStatusHandle',
+        name: 'triggerStatusHandle',
+        options: [{ label: 'Choose a status'|t('bird'), value: '' }]|merge(statusOptions),
+        value: settings.triggerStatusHandle
+    }) }}
+</div>
+
+{{ forms.lightswitchField({
+    label: 'Push through the queue'|t('bird'),
+    instructions: 'Recommended. A slow Moneybird then cannot slow down a customer’s checkout.'|t('bird'),
+    id: 'queueSync',
+    name: 'queueSync',
+    on: settings.queueSync
+}) }}
+
+{{ forms.selectField({
+    label: 'Reference'|t('bird'),
+    instructions: 'What Moneybird files the invoice under. Bird also searches on it to recover an invoice it lost track of, so it has to be unique per order.'|t('bird'),
+    id: 'referenceSource',
+    name: 'referenceSource',
+    options: [
+        { label: 'Order reference'|t('bird'), value: 'reference' },
+        { label: 'Order number'|t('bird'), value: 'number' },
+        { label: 'Short order number'|t('bird'), value: 'shortNumber' },
+        { label: 'Element ID'|t('bird'), value: 'id' }
+    ],
+    value: settings.referenceSource
+}) }}
+
+{{ forms.selectField({
+    label: 'Invoice date'|t('bird'),
+    id: 'invoiceDateSource',
+    name: 'invoiceDateSource',
+    options: [
+        { label: 'The date the order was placed'|t('bird'), value: 'ordered' },
+        { label: 'The date the order was paid'|t('bird'), value: 'paid' },
+        { label: 'Today'|t('bird'), value: 'today' }
+    ],
+    value: settings.invoiceDateSource
+}) }}
+
+{{ forms.textField({
+    label: 'Payment term'|t('bird'),
+    instructions: 'Days after the invoice date the invoice is due.'|t('bird'),
+    id: 'firstDueInterval',
+    name: 'firstDueInterval',
+    type: 'number',
+    size: 5,
+    value: settings.firstDueInterval
+}) }}
+
+{{ forms.textField({
+    label: 'Retry attempts'|t('bird'),
+    instructions: 'How many times a failed push is retried before it stops on its own.'|t('bird'),
+    id: 'maxAttempts',
+    name: 'maxAttempts',
+    type: 'number',
+    size: 5,
+    value: settings.maxAttempts
+}) }}
+
+{{ forms.autosuggestField({
+    label: 'Workflow'|t('bird'),
+    instructions: 'Moneybird workflow id. Blank uses the administration default. Sales invoices only.'|t('bird'),
+    id: 'workflowId',
+    name: 'workflowId',
+    value: settings.workflowId,
+    suggestEnvVars: false
+}) }}
+
+{{ forms.autosuggestField({
+    label: 'Document style'|t('bird'),
+    instructions: 'Moneybird document style id. Blank uses the administration default.'|t('bird'),
+    id: 'documentStyleId',
+    name: 'documentStyleId',
+    value: settings.documentStyleId,
+    suggestEnvVars: false
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Send the invoice'|t('bird'),
+    instructions: 'Pro. Ask Moneybird to send the invoice once it has been created. Sales invoices only.'|t('bird'),
+    id: 'sendInvoice',
+    name: 'sendInvoice',
+    on: settings.sendInvoice
+}) }}
+
+{{ forms.selectField({
+    label: 'Delivery method'|t('bird'),
+    id: 'sendDeliveryMethod',
+    name: 'sendDeliveryMethod',
+    options: [
+        { label: 'Email'|t('bird'), value: 'Email' },
+        { label: 'Simplerinvoicing'|t('bird'), value: 'Simplerinvoicing' },
+        { label: 'Post'|t('bird'), value: 'Post' },
+        { label: 'Manual'|t('bird'), value: 'Manual' }
+    ],
+    value: settings.sendDeliveryMethod
+}) }}
+
+{{ forms.textareaField({
+    label: 'Email message'|t('bird'),
+    instructions: 'Optional. Moneybird expands `{invoice_id}` itself.'|t('bird'),
+    id: 'emailMessage',
+    name: 'emailMessage',
+    rows: 3,
+    value: settings.emailMessage
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Skip zero-total orders'|t('bird'),
+    instructions: 'Free samples and fully-discounted test orders otherwise book a document apiece for no revenue.'|t('bird'),
+    id: 'skipZeroTotalOrders',
+    name: 'skipZeroTotalOrders',
+    on: settings.skipZeroTotalOrders
+}) }}
+
+{# ------------------------------------------------------------------ #}
+<hr>
+<h2>{{ 'Tax'|t('bird') }}</h2>
+
+<div class="pane">
+    <p>
+        {{ 'Bird never re-decides what to charge — Commerce already did that, and it is what the customer paid. What Moneybird needs on top of the number is the *reason*: 0% reverse-charged, 0% exported and 0% zero-rated are three different rates over there, and they land in three different boxes on a VAT return.'|t('bird') }}
+    </p>
+    <p class="light">
+        {{ 'Map every percentage Commerce can charge, including 0% — a rounding line and an unclassified export both fall back to it.'|t('bird') }}
+    </p>
+    <div class="buttons">
+        <button type="button" class="btn" id="bird-suggest-tax">{{ 'Suggest a mapping'|t('bird') }}</button>
+        <button type="button" class="btn" id="bird-list-tax">{{ 'List Moneybird tax rates'|t('bird') }}</button>
+    </div>
+</div>
+
+{{ forms.textField({
+    label: 'Home country'|t('bird'),
+    instructions: 'The country you file VAT in, as a two-letter code. Everything the VAT engine decides is relative to it.'|t('bird'),
+    id: 'homeCountry',
+    name: 'homeCountry',
+    size: 4,
+    value: settings.homeCountry
+}) }}
+
+{{ forms.editableTableField({
+    label: 'VAT rates'|t('bird'),
+    instructions: 'Effective VAT percentage → Moneybird tax rate id.'|t('bird'),
+    id: 'taxRateMap',
+    name: 'taxRateMap',
+    cols: {
+        percentage: { heading: 'Percentage'|t('bird'), type: 'singleline', width: 120 },
+        taxRateId: { heading: 'Moneybird tax rate id'|t('bird'), type: 'singleline', code: true }
+    },
+    rows: taxRows,
+    addRowLabel: 'Add a rate'|t('bird')
+}) }}
+
+{{ forms.textField({
+    label: 'Reverse-charge tax rate'|t('bird'),
+    instructions: 'The Moneybird 0% rate that prints “btw verlegd”. Used for EU business customers with a valid VAT number.'|t('bird'),
+    id: 'reverseChargeTaxRateId',
+    name: 'reverseChargeTaxRateId',
+    class: 'code',
+    value: settings.reverseChargeTaxRateId
+}) }}
+
+{{ forms.textField({
+    label: 'Export tax rate'|t('bird'),
+    instructions: 'The Moneybird 0% rate for sales outside the EU.'|t('bird'),
+    id: 'exportTaxRateId',
+    name: 'exportTaxRateId',
+    class: 'code',
+    value: settings.exportTaxRateId
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'One Stop Shop'|t('bird'),
+    instructions: 'Pro. Consumers elsewhere in the EU are charged their own country’s rate, and it has to be booked against that country’s Moneybird rate.'|t('bird'),
+    id: 'ossEnabled',
+    name: 'ossEnabled',
+    on: settings.ossEnabled
+}) }}
+
+{{ forms.editableTableField({
+    label: 'OSS rates'|t('bird'),
+    instructions: 'Country and percentage → Moneybird tax rate id, e.g. `DE:19`.'|t('bird'),
+    id: 'ossTaxRateMap',
+    name: 'ossTaxRateMap',
+    cols: {
+        key: { heading: 'Country:percentage'|t('bird'), type: 'singleline', width: 180 },
+        taxRateId: { heading: 'Moneybird tax rate id'|t('bird'), type: 'singleline', code: true }
+    },
+    rows: ossRows,
+    addRowLabel: 'Add a country'|t('bird')
+}) }}
+
+{{ forms.textField({
+    label: 'VAT number field'|t('bird'),
+    instructions: 'Where a business customer’s VAT number lives. `organizationTaxId` is Craft’s own address field, which is what Commerce’s VAT validators read. Anything else is treated as a custom field handle.'|t('bird'),
+    id: 'vatNumberSource',
+    name: 'vatNumberSource',
+    class: 'code',
+    value: settings.vatNumberSource
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Reconcile totals'|t('bird'),
+    instructions: 'Add a rounding line when the assembled invoice does not total exactly what the customer paid. Off means Bird refuses to book such an order at all.'|t('bird'),
+    id: 'reconcileTotals',
+    name: 'reconcileTotals',
+    on: settings.reconcileTotals
+}) }}
+
+{# ------------------------------------------------------------------ #}
+<hr>
+<h2>{{ 'Ledger accounts'|t('bird') }}</h2>
+
+{{ forms.textField({
+    label: 'Default revenue account'|t('bird'),
+    instructions: 'Blank lets Moneybird pick the administration’s default.'|t('bird'),
+    id: 'defaultLedgerAccountId',
+    name: 'defaultLedgerAccountId',
+    class: 'code',
+    value: settings.defaultLedgerAccountId
+}) }}
+
+{{ forms.textField({
+    label: 'Shipping account'|t('bird'),
+    id: 'shippingLedgerAccountId',
+    name: 'shippingLedgerAccountId',
+    class: 'code',
+    value: settings.shippingLedgerAccountId
+}) }}
+
+{{ forms.textField({
+    label: 'Discount account'|t('bird'),
+    id: 'discountLedgerAccountId',
+    name: 'discountLedgerAccountId',
+    class: 'code',
+    value: settings.discountLedgerAccountId
+}) }}
+
+{{ forms.editableTableField({
+    label: 'Per product type'|t('bird'),
+    instructions: 'Pro. Commerce product type handle → Moneybird ledger account id.'|t('bird'),
+    id: 'ledgerAccountMap',
+    name: 'ledgerAccountMap',
+    cols: {
+        productType: { heading: 'Product type handle'|t('bird'), type: 'singleline', width: 220 },
+        ledgerAccountId: { heading: 'Moneybird ledger account id'|t('bird'), type: 'singleline', code: true }
+    },
+    rows: ledgerRows,
+    addRowLabel: 'Add a product type'|t('bird')
+}) }}
+
+<div class="field">
+    <button type="button" class="btn" id="bird-list-ledger">{{ 'List Moneybird ledger accounts'|t('bird') }}</button>
+</div>
+
+{# ------------------------------------------------------------------ #}
+<hr>
+<h2>{{ 'Contacts'|t('bird') }}</h2>
+
+{{ forms.lightswitchField({
+    label: 'Sync contacts'|t('bird'),
+    instructions: 'Create and update a Moneybird contact per customer. Off books everything to the fallback contact below.'|t('bird'),
+    id: 'syncContacts',
+    name: 'syncContacts',
+    on: settings.syncContacts
+}) }}
+
+{{ forms.selectField({
+    label: 'Match customers by'|t('bird'),
+    instructions: 'What Bird writes into Moneybird’s `customer_id`, and therefore what a returning customer is found by.'|t('bird'),
+    id: 'contactCustomerIdSource',
+    name: 'contactCustomerIdSource',
+    options: [
+        { label: 'Craft user'|t('bird'), value: 'userId' },
+        { label: 'Email address'|t('bird'), value: 'email' },
+        { label: 'Order number — a new contact every order'|t('bird'), value: 'orderNumber' },
+        { label: 'Don’t set one'|t('bird'), value: 'none' }
+    ],
+    value: settings.contactCustomerIdSource
+}) }}
+
+{{ forms.selectField({
+    label: 'Address'|t('bird'),
+    id: 'contactAddressSource',
+    name: 'contactAddressSource',
+    options: [
+        { label: 'Billing address'|t('bird'), value: 'billing' },
+        { label: 'Shipping address'|t('bird'), value: 'shipping' }
+    ],
+    value: settings.contactAddressSource
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Update existing contacts'|t('bird'),
+    instructions: 'Push address changes back onto a contact Moneybird already has.'|t('bird'),
+    id: 'updateExistingContacts',
+    name: 'updateExistingContacts',
+    on: settings.updateExistingContacts
+}) }}
+
+{{ forms.textField({
+    label: 'Fallback contact'|t('bird'),
+    instructions: 'A Moneybird contact id to invoice to when an order has nobody to match — a guest checkout with no address, or contact syncing turned off. Booking B2C revenue to one “Webshop customers” contact is a perfectly good way to run a busy shop.'|t('bird'),
+    id: 'fallbackContactId',
+    name: 'fallbackContactId',
+    class: 'code',
+    value: settings.fallbackContactId
+}) }}
+
+{# ------------------------------------------------------------------ #}
+<hr>
+<h2>{{ 'Payments'|t('bird') }}</h2>
+
+{{ forms.lightswitchField({
+    label: 'Register payments'|t('bird'),
+    instructions: 'Book the order’s payment against the invoice, so it lands in Moneybird already paid instead of joining a pile of open invoices that were settled weeks ago.'|t('bird'),
+    id: 'registerPayments',
+    name: 'registerPayments',
+    on: settings.registerPayments
+}) }}
+
+{{ forms.textField({
+    label: 'Financial account'|t('bird'),
+    instructions: 'Moneybird financial account id. Blank leaves the payment unassigned, which is what you want when the bank feed will match it later.'|t('bird'),
+    id: 'financialAccountId',
+    name: 'financialAccountId',
+    class: 'code',
+    value: settings.financialAccountId
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Credit refunds'|t('bird'),
+    instructions: 'Pro. Turn a Commerce refund into a Moneybird credit note, so the VAT comes back off the same rate it went on at.'|t('bird'),
+    id: 'creditRefunds',
+    name: 'creditRefunds',
+    on: settings.creditRefunds
+}) }}
+
+{# ------------------------------------------------------------------ #}
+<hr>
+<h2>{{ 'Webhook'|t('bird') }}</h2>
+
+<div class="pane">
+    <p>{{ 'Bird pushes invoices; Moneybird is where they get paid — matched against a bank feed, or marked paid by hand. Without the webhook, this site’s idea of “paid” is whatever the payment gateway said at checkout.'|t('bird') }}</p>
+
+    {{ forms.textField({
+        label: 'Webhook URL'|t('bird'),
+        id: 'bird-webhook-url',
+        value: settings.getWebhookUrl(),
+        readonly: true,
+        class: 'code'
+    }) }}
+
+    <div class="buttons">
+        <button type="button" class="btn" id="bird-install-webhook">{{ 'Install webhook'|t('bird') }}</button>
+        <button type="button" class="btn" id="bird-remove-webhook">{{ 'Remove webhook'|t('bird') }}</button>
+    </div>
+    <p class="light" id="bird-webhook-result">
+        {% if settings.webhookId %}
+            {{ 'Installed as {id}.'|t('bird', { id: settings.webhookId }) }}
+        {% else %}
+            {{ 'Not installed.'|t('bird') }}
+        {% endif %}
+    </p>
+</div>
+
+{{ forms.lightswitchField({
+    label: 'Accept webhooks'|t('bird'),
+    id: 'webhooksEnabled',
+    name: 'webhooksEnabled',
+    on: settings.webhooksEnabled
+}) }}
+
+{{ forms.autosuggestField({
+    label: 'Signing secret'|t('bird'),
+    instructions: 'Moneybird shows this once, when the webhook is created. Bird stores it here; move it to an environment variable if you would rather it did not sit in project config.'|t('bird'),
+    id: 'webhookSecret',
+    name: 'webhookSecret',
+    value: settings.webhookSecret,
+    suggestEnvVars: true
+}) }}
+
+{{ forms.selectField({
+    label: 'Paid order status'|t('bird'),
+    instructions: 'Move an order to this status when Moneybird reports its invoice paid.'|t('bird'),
+    id: 'paidOrderStatusHandle',
+    name: 'paidOrderStatusHandle',
+    options: [{ label: 'Leave the status alone'|t('bird'), value: '' }]|merge(statusOptions),
+    value: settings.paidOrderStatusHandle
+}) }}
+
+{# ------------------------------------------------------------------ #}
+<hr>
+<h2>{{ 'Logging'|t('bird') }}</h2>
+
+{{ forms.lightswitchField({
+    label: 'Log connections'|t('bird'),
+    id: 'loggingEnabled',
+    name: 'loggingEnabled',
+    on: settings.loggingEnabled
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Keep payloads'|t('bird'),
+    instructions: 'Pro. Store request and response bodies on log rows. Tokens and webhook secrets are redacted.'|t('bird'),
+    id: 'logPayloads',
+    name: 'logPayloads',
+    on: settings.logPayloads
+}) }}
+
+{{ forms.textField({
+    label: 'Keep entries for'|t('bird'),
+    instructions: 'Days. 0 keeps everything. Lite always keeps 7 days — it has no log screen to prune from.'|t('bird'),
+    id: 'logRetentionDays',
+    name: 'logRetentionDays',
+    type: 'number',
+    size: 5,
+    value: settings.logRetentionDays
+}) }}
+
+{% js %}
+(function() {
+    function post(action, body) {
+        return Craft.sendActionRequest('POST', action, { data: body || {} });
+    }
+
+    function get(action, params) {
+        return Craft.sendActionRequest('GET', action, { params: params || {} });
+    }
+
+    function say(id, message, isError) {
+        var el = document.getElementById(id);
+        if (!el) { return; }
+        el.textContent = message;
+        el.style.color = isError ? '#cf1124' : '';
+    }
+
+    function listModal(title, options) {
+        var modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.cssText = 'padding: 24px; overflow: auto; max-height: 70vh;';
+
+        var heading = document.createElement('h2');
+        heading.textContent = title;
+        modal.appendChild(heading);
+
+        var table = document.createElement('table');
+        table.className = 'data fullwidth';
+        options.forEach(function(option) {
+            var row = table.insertRow();
+            var id = row.insertCell();
+            // Values arrive as data and are set as text: an administration named with a `<script>`
+            // is a bad joke, not a stored XSS.
+            id.textContent = option.value;
+            id.style.fontFamily = 'monospace';
+            row.insertCell().textContent = option.label;
+        });
+        modal.appendChild(table);
+
+        document.body.appendChild(modal);
+        new Garnish.Modal(modal, { resizable: true });
+    }
+
+    var test = document.getElementById('bird-test');
+    if (test) {
+        test.addEventListener('click', function() {
+            test.classList.add('loading');
+            say('bird-test-result', {{ 'Asking Moneybird…'|t('bird')|json_encode|raw }});
+            get('bird/settings/test-connection')
+                .then(function(response) { say('bird-test-result', response.data.message, !response.data.success); })
+                .catch(function() { say('bird-test-result', {{ 'Couldn’t reach Moneybird.'|t('bird')|json_encode|raw }}, true); })
+                .finally(function() { test.classList.remove('loading'); });
+        });
+    }
+
+    var administrations = document.getElementById('bird-administrations');
+    if (administrations) {
+        administrations.addEventListener('click', function() {
+            get('bird/settings/administrations').then(function(response) {
+                if (!response.data.success) { say('bird-test-result', response.data.message, true); return; }
+                listModal({{ 'Administrations'|t('bird')|json_encode|raw }}, response.data.options);
+            });
+        });
+    }
+
+    [['bird-list-tax', 'taxRates', {{ 'Moneybird tax rates'|t('bird')|json_encode|raw }}],
+     ['bird-list-ledger', 'ledgerAccounts', {{ 'Moneybird ledger accounts'|t('bird')|json_encode|raw }}]].forEach(function(entry) {
+        var button = document.getElementById(entry[0]);
+        if (!button) { return; }
+        button.addEventListener('click', function() {
+            button.classList.add('loading');
+            get('bird/settings/options', { type: entry[1] })
+                .then(function(response) {
+                    if (!response.data.success) { Craft.cp.displayError(response.data.message); return; }
+                    listModal(entry[2], response.data.options);
+                })
+                .finally(function() { button.classList.remove('loading'); });
+        });
+    });
+
+    var suggest = document.getElementById('bird-suggest-tax');
+    if (suggest) {
+        suggest.addEventListener('click', function() {
+            suggest.classList.add('loading');
+            get('bird/settings/suggest-tax-rates')
+                .then(function(response) {
+                    if (!response.data.success) { Craft.cp.displayError(response.data.message); return; }
+                    var lines = response.data.rows.map(function(row) {
+                        return row.percentage + '%  ' + row.taxRateId + '  ' + row.label;
+                    });
+                    if (response.data.reverseCharge) {
+                        lines.push('reverse charge  ' + response.data.reverseCharge.value + '  ' + response.data.reverseCharge.label);
+                    }
+                    if (response.data.export) {
+                        lines.push('export  ' + response.data.export.value + '  ' + response.data.export.label);
+                    }
+                    listModal({{ 'Suggested mapping — copy these into the tables above'|t('bird')|json_encode|raw }},
+                        lines.map(function(line) { return { value: '', label: line }; }));
+                })
+                .finally(function() { suggest.classList.remove('loading'); });
+        });
+    }
+
+    var install = document.getElementById('bird-install-webhook');
+    if (install) {
+        install.addEventListener('click', function() {
+            install.classList.add('loading');
+            post('bird/settings/install-webhook')
+                .then(function(response) {
+                    say('bird-webhook-result', response.data.message, !response.data.success);
+                    if (response.data.success) { Craft.cp.displayNotice(response.data.message); }
+                })
+                .catch(function() { say('bird-webhook-result', {{ 'Couldn’t install the webhook.'|t('bird')|json_encode|raw }}, true); })
+                .finally(function() { install.classList.remove('loading'); });
+        });
+    }
+
+    var remove = document.getElementById('bird-remove-webhook');
+    if (remove) {
+        remove.addEventListener('click', function() {
+            remove.classList.add('loading');
+            post('bird/settings/remove-webhook')
+                .then(function(response) { say('bird-webhook-result', response.data.message, !response.data.success); })
+                .finally(function() { remove.classList.remove('loading'); });
+        });
+    }
+})();
+{% endjs %}

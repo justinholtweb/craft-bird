@@ -1,0 +1,116 @@
+{% extends '_layouts/cp' %}
+{% import '_includes/forms' as forms %}
+
+{% set title = 'Moneybird documents'|t('bird') %}
+{% set selectedSubnavItem = 'documents' %}
+
+{% block content %}
+    {% if not isReady %}
+        <div class="pane" style="margin-bottom: 14px;">
+            <p class="warning">{{ 'Bird is not connected to Moneybird yet. Add an API token and an administration in the settings.'|t('bird') }}</p>
+        </div>
+    {% endif %}
+
+    <div class="flex" style="margin-bottom: 14px; gap: 10px;">
+        {{ forms.text({
+            id: 'bird-search',
+            name: 'search',
+            placeholder: 'Reference or invoice number'|t('bird'),
+            value: criteria.search ?? ''
+        }) }}
+
+        {{ forms.select({
+            id: 'bird-state-filter',
+            name: 'state',
+            options: [
+                { label: 'All states'|t('bird'), value: '' },
+                { label: 'Pending'|t('bird'), value: 'pending' },
+                { label: 'Failed'|t('bird'), value: 'failed' },
+                { label: 'Draft'|t('bird'), value: 'draft' },
+                { label: 'Open'|t('bird'), value: 'open' },
+                { label: 'Late'|t('bird'), value: 'late' },
+                { label: 'Paid'|t('bird'), value: 'paid' }
+            ],
+            value: criteria.state ?? ''
+        }) }}
+
+        {{ forms.select({
+            id: 'bird-kind-filter',
+            name: 'kind',
+            options: [
+                { label: 'Invoices and credits'|t('bird'), value: '' },
+                { label: 'Invoices'|t('bird'), value: 'invoice' },
+                { label: 'Credit notes'|t('bird'), value: 'credit' }
+            ],
+            value: criteria.kind ?? ''
+        }) }}
+
+        <span class="light" style="align-self: center;">{{ '{total} documents'|t('bird', { total: total }) }}</span>
+    </div>
+
+    {% if documents|length %}
+        <table class="data fullwidth">
+            <thead>
+                <tr>
+                    <th scope="col">{{ 'Document'|t('bird') }}</th>
+                    <th scope="col">{{ 'Order'|t('bird') }}</th>
+                    <th scope="col">{{ 'State'|t('bird') }}</th>
+                    <th scope="col">{{ 'VAT'|t('bird') }}</th>
+                    <th scope="col">{{ 'Total'|t('bird') }}</th>
+                    <th scope="col">{{ 'Booked'|t('bird') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for document in documents %}
+                    <tr>
+                        <td>
+                            <a href="{{ url('bird/documents/' ~ document.id) }}">{{ document.getLabel() }}</a>
+                            {% if document.getIsCredit() %}<span class="light">{{ '(credit)'|t('bird') }}</span>{% endif %}
+                        </td>
+                        <td><a href="{{ cpUrl('commerce/orders/' ~ document.orderId) }}">{{ document.reference ?? document.orderId }}</a></td>
+                        <td>
+                            <span class="status {{ document.getStatusColor() }}"></span>
+                            {{ document.getStateLabel() }}
+                        </td>
+                        <td class="light">{{ document.taxTreatment ?? '—' }}</td>
+                        <td>{{ document.total|commerceCurrency(document.currency ?? 'EUR') }}</td>
+                        <td class="light">{{ document.dateSynced ? document.dateSynced|datetime('short') : '—' }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="zilch">
+            <p>{{ 'Nothing booked yet.'|t('bird') }}</p>
+            <p class="light">{{ 'Orders show up here once Bird has sent them to Moneybird.'|t('bird') }}</p>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% js %}
+(function() {
+    function reload() {
+        var url = new URL(window.location.href);
+
+        [['bird-search', 'search'], ['bird-state-filter', 'state'], ['bird-kind-filter', 'kind']].forEach(function(pair) {
+            var el = document.getElementById(pair[0]);
+            if (el && el.value) { url.searchParams.set(pair[1], el.value); }
+            else { url.searchParams.delete(pair[1]); }
+        });
+
+        window.location.href = url.toString();
+    }
+
+    ['bird-state-filter', 'bird-kind-filter'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) { el.addEventListener('change', reload); }
+    });
+
+    var search = document.getElementById('bird-search');
+    if (search) {
+        search.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') { event.preventDefault(); reload(); }
+        });
+    }
+})();
+{% endjs %}
