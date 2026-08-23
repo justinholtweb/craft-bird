@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<!-- handmade: hand-tuned deck -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bird — Plugin Store promos</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --charcoal: #0f0f1a;
+    --accent: #E2711D;
+    --accent-light: #F59356;
+    --gold: #FFC24B;
+    --off-white: #f0f0f5;
+    --green: #4ade80;
+  }
+
+  html { background: #000; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: var(--off-white);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- slide shell ---------------------------------------------------- */
+  .slide {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse at 85% 15%, rgba(226, 113, 29, 0.22) 0%, transparent 40%),
+      radial-gradient(ellipse at 65% 5%,  rgba(245, 147, 86, 0.14) 0%, transparent 35%),
+      radial-gradient(ellipse at 15% 85%, rgba(255, 194, 75, 0.07) 0%, transparent 40%),
+      radial-gradient(ellipse at 35% 95%, rgba(226, 113, 29, 0.09) 0%, transparent 35%),
+      linear-gradient(135deg, #0f0f1a 0%, #1c1410 30%, #201812 60%, #0f0f1a 100%);
+  }
+
+  /* Oversized watermark, echoing the app icon */
+  .slide::after {
+    content: '';
+    position: absolute;
+    top: -6%;
+    left: -20%;
+    width: 980px;
+    height: 980px;
+    background: url('assets/watermark.svg') no-repeat center / contain;
+    opacity: 0.022;
+    pointer-events: none;
+  }
+
+  /* Hairline along the top edge */
+  .slide::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 6px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-light), var(--gold), var(--accent));
+    z-index: 5;
+  }
+
+  .inner {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    padding: 118px 130px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* ---- type ------------------------------------------------------------ */
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: rgba(240, 240, 245, 0.62);
+    margin-bottom: 34px;
+  }
+  .eyebrow .rule {
+    width: 58px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--accent-light);
+  }
+
+  h1, h2 {
+    font-family: 'Jersey 20', sans-serif;
+    font-weight: 400;
+    line-height: 0.9;
+    letter-spacing: 0.005em;
+  }
+
+  .gradient-text {
+    background-image: linear-gradient(100deg, #E2711D 0%, #F59356 38%, #FFC24B 68%, #E2711D 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .lede {
+    font-size: 34px;
+    line-height: 1.5;
+    color: rgba(240, 240, 245, 0.72);
+  }
+
+  .mono {
+    font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  /* ---- cover slide ----------------------------------------------------- */
+  .cover .inner { gap: 90px; }
+  .cover .copy { flex: 1 1 auto; }
+  .cover h1 { font-size: 210px; margin-bottom: 26px; }
+  .cover .tagline {
+    font-family: 'Jersey 20', sans-serif;
+    font-size: 60px;
+    line-height: 1.02;
+    color: var(--off-white);
+    margin-bottom: 40px;
+    max-width: 16ch;
+  }
+  .cover .lede { max-width: 28ch; font-size: 30px; }
+
+  .cover .mark {
+    flex: 0 0 auto;
+    width: 460px;
+    height: 460px;
+    filter: drop-shadow(14px 14px 0 rgba(0, 0, 0, 0.35));
+  }
+  .cover .mark img { width: 100%; height: 100%; display: block; }
+
+  .badges { display: flex; gap: 16px; margin-top: 52px; }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 26px;
+    font-size: 22px;
+    font-weight: 500;
+    color: rgba(240, 240, 245, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 999px;
+  }
+  .badge .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent-light);
+  }
+  .cover .disclaimer {
+    margin-top: 30px;
+    font-size: 19px;
+    line-height: 1.5;
+    color: rgba(240, 240, 245, 0.34);
+    max-width: 56ch;
+  }
+
+  /* ---- the statement slide --------------------------------------------- */
+  .statement .inner { flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+  .statement .eyebrow { justify-content: center; }
+  .swap { display: flex; flex-direction: column; align-items: center; gap: 22px; margin-top: 8px; }
+  .swap .caption {
+    font-size: 26px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(240, 240, 245, 0.42);
+  }
+  .swap .before {
+    font-size: 108px;
+    color: rgba(240, 240, 245, 0.30);
+    letter-spacing: 0.02em;
+  }
+  .swap .arrow {
+    width: 4px;
+    height: 62px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, rgba(245,147,86,0.15), var(--accent-light));
+    position: relative;
+  }
+  .swap .arrow::after {
+    content: '';
+    position: absolute;
+    left: 50%; bottom: -4px;
+    width: 18px; height: 18px;
+    transform: translateX(-50%) rotate(45deg);
+    border-right: 4px solid var(--accent-light);
+    border-bottom: 4px solid var(--accent-light);
+    border-radius: 2px;
+  }
+  .swap .after {
+    display: flex;
+    gap: 34px;
+    align-items: baseline;
+  }
+  .swap .after span {
+    font-family: 'Jersey 20', sans-serif;
+    font-size: 76px;
+    line-height: 1;
+    letter-spacing: 0.01em;
+  }
+  .swap .after .sep { font-size: 44px; color: rgba(240,240,245,0.25); }
+  .statement .lede { margin-top: 44px; max-width: 40ch; font-size: 32px; }
+
+  /* ---- feature slides -------------------------------------------------- */
+  .feature .inner { align-items: center; }
+  .feature .copy { width: 760px; flex: 0 0 760px; }
+  .feature h2 { font-size: 104px; margin-bottom: 30px; }
+  .feature .lede { max-width: 22ch; }
+
+  .points {
+    list-style: none;
+    margin-top: 44px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .points li {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    font-size: 25px;
+    line-height: 1.4;
+    color: rgba(240, 240, 245, 0.6);
+  }
+  .points li .tick {
+    flex: 0 0 auto;
+    margin-top: 9px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--accent-light);
+  }
+
+  /* Right-hand panel shared by the treatment, match, sheet and flow slides */
+  .panel {
+    position: absolute;
+    top: 50%;
+    left: 890px;
+    right: 130px;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* ---- VAT treatment rows ---------------------------------------------- */
+  .treat {
+    display: flex;
+    align-items: center;
+    gap: 26px;
+    padding: 30px 34px;
+    border-radius: 16px;
+    background: rgba(37, 30, 26, 0.66);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .treat .who { flex: 1 1 auto; font-size: 27px; color: rgba(240, 240, 245, 0.62); line-height: 1.35; }
+  .treat .rate {
+    flex: 0 0 auto;
+    font-family: 'Jersey 20', sans-serif;
+    font-size: 46px;
+    line-height: 1;
+    color: var(--accent-light);
+    text-align: right;
+  }
+  .treat .rate small { display: block; font-family: 'Inter', sans-serif; font-size: 19px; color: rgba(240,240,245,0.38); margin-top: 8px; letter-spacing: 0.04em; }
+  .treat.zero .rate { color: var(--gold); }
+
+  /* ---- rate matching --------------------------------------------------- */
+  .calc {
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
+  }
+  .calc .line {
+    display: flex;
+    align-items: center;
+    padding: 30px 38px;
+    background: rgba(37, 30, 26, 0.6);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 31px;
+  }
+  .calc .line:first-child { border-top: 0; }
+  .calc .line .k { flex: 1 1 auto; color: rgba(240, 240, 245, 0.5); font-family: 'Inter', sans-serif; font-size: 27px; }
+  .calc .line .v { flex: 0 0 auto; color: var(--off-white); }
+  .calc .line.bad { background: rgba(226, 113, 29, 0.10); }
+  .calc .line.bad .v { color: #ff8a6b; }
+  .calc .line.good { background: rgba(74, 222, 128, 0.09); }
+  .calc .line.good .v { color: var(--green); }
+
+  .note {
+    font-size: 24px;
+    line-height: 1.5;
+    color: rgba(240, 240, 245, 0.45);
+    margin-top: 6px;
+  }
+  .note.center { text-align: center; }
+
+  /* ---- invoice sheet ---------------------------------------------------- */
+  .sheet {
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
+  }
+  .sheet .head {
+    display: flex;
+    padding: 24px 38px;
+    background: rgba(226, 113, 29, 0.18);
+    font-size: 21px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(240, 240, 245, 0.6);
+  }
+  .sheet .row {
+    display: flex;
+    padding: 24px 38px;
+    background: rgba(37, 30, 26, 0.58);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 29px;
+  }
+  .sheet .row.rounding { background: rgba(255, 194, 75, 0.10); }
+  .sheet .row.rounding .c1 { color: var(--gold); }
+  .sheet .row.total { background: rgba(74, 222, 128, 0.10); border-top: 1px solid rgba(255,255,255,0.14); }
+  .sheet .row.total .c1, .sheet .row.total .c4 { color: var(--green); }
+  .sheet .c1 { flex: 1 1 auto; color: rgba(240, 240, 245, 0.72); }
+  .sheet .c2 { flex: 0 0 140px; color: rgba(240, 240, 245, 0.4); text-align: right; }
+  .sheet .c3 { flex: 0 0 170px; color: rgba(240, 240, 245, 0.55); text-align: right; }
+  .sheet .c4 { flex: 0 0 190px; color: var(--off-white); text-align: right; }
+
+  /* ---- idempotency flow -------------------------------------------------- */
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 26px;
+    padding: 26px 34px;
+    border-radius: 16px;
+    background: rgba(37, 30, 26, 0.62);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .step .num {
+    flex: 0 0 auto;
+    width: 58px; height: 58px;
+    display: grid; place-items: center;
+    border-radius: 12px;
+    background: var(--accent);
+    font-family: 'Jersey 20', sans-serif;
+    font-size: 38px;
+    color: #fff;
+  }
+  .step .label { display: block; font-size: 28px; font-weight: 600; color: var(--off-white); }
+  .step .sub { display: block; font-size: 21px; color: rgba(240, 240, 245, 0.55); margin-top: 6px; }
+
+  .lock {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    font-size: 22px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(240, 240, 245, 0.42);
+  }
+  .lock .bar { flex: 1 1 auto; height: 1px; background: rgba(255,255,255,0.1); }
+
+  /* ---- terminal --------------------------------------------------------- */
+  .term {
+    position: absolute;
+    top: 50%;
+    left: 890px;
+    right: -110px;
+    transform: translateY(-50%);
+    border-radius: 14px; overflow: hidden;
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .term .chrome {
+    height: 44px;
+    background: #2a2320;
+    background-image:
+      radial-gradient(circle at 26px 22px, #ff5f57 6.5px, transparent 7px),
+      radial-gradient(circle at 52px 22px, #ffbd2e 6.5px, transparent 7px),
+      radial-gradient(circle at 78px 22px, #28ca42 6.5px, transparent 7px);
+  }
+  .term .body {
+    background: #12100f;
+    padding: 42px 44px;
+    font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 24px;
+    line-height: 1.95;
+  }
+  .term .prompt { color: var(--accent-light); }
+  .term .cmd { color: var(--off-white); }
+  .term .out { color: rgba(240, 240, 245, 0.45); }
+  .term .ok { color: var(--green); }
+  .term .warn { color: var(--gold); }
+  .term .blank { display: block; height: 18px; }
+
+  /* ---- footer lockup --------------------------------------------------- */
+  .footer {
+    position: absolute;
+    left: 130px;
+    right: 130px;
+    bottom: 58px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    font-size: 22px;
+    letter-spacing: 0.06em;
+    color: rgba(240, 240, 245, 0.4);
+  }
+  .footer img { width: 40px; height: 40px; border-radius: 9px; }
+  .footer b { color: rgba(240, 240, 245, 0.72); font-weight: 600; }
+  .footer .tm {
+    margin-left: auto;
+    font-size: 18px;
+    letter-spacing: 0.04em;
+    color: rgba(240, 240, 245, 0.28);
+  }
+
+  /* Only render the requested slide when screenshotting */
+  body.single .slide { display: none; }
+  body.single .slide.active { display: block; }
+</style>
+</head>
+<body>
+
+<!-- 1 · Cover ============================================================ -->
+<section class="slide cover" data-n="1">
+  <div class="inner">
+    <div class="copy">
+      <div class="eyebrow"><span class="rule"></span> Craft Commerce 5</div>
+      <h1 class="gradient-text">Bird</h1>
+      <p class="tagline">Moneybird bookkeeping that gets the VAT right.</p>
+      <p class="lede">Paid orders become invoices with the right rate on them — reverse charge, export
+        and One Stop Shop included.</p>
+      <div class="badges">
+        <span class="badge"><span class="dot"></span> Lite free &nbsp;·&nbsp; Pro $99</span>
+        <span class="badge">Craft 5.3+ · Commerce 5 · PHP 8.2+</span>
+      </div>
+      <p class="disclaimer">Bird is an independent plugin. It is not affiliated with, endorsed by, or
+        sponsored by Moneybird. &ldquo;Moneybird&rdquo; is a trademark of its respective owner.</p>
+    </div>
+    <div class="mark"><img src="assets/icon.svg" alt=""></div>
+  </div>
+</section>
+
+<!-- 2 · 0% is three rates ================================================ -->
+<section class="slide statement" data-n="2">
+  <div class="inner">
+    <div class="eyebrow"><span class="rule"></span> The whole idea</div>
+    <div class="swap">
+      <span class="caption">Every other bridge books</span>
+      <span class="before mono">0%</span>
+      <span class="arrow"></span>
+      <span class="caption">Bird books which 0% it was</span>
+      <span class="after">
+        <span class="gradient-text">btw&nbsp;verlegd</span>
+        <span class="sep">·</span>
+        <span class="gradient-text">export</span>
+        <span class="sep">·</span>
+        <span class="gradient-text">zero-rated</span>
+      </span>
+    </div>
+    <p class="lede">Three different rates in Moneybird, landing in three different boxes on a VAT
+      return. Getting that wrong produces a return that balances and is still wrong.</p>
+  </div>
+  <div class="footer"><img src="assets/icon.svg" alt=""> <b>Bird</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-bird
+    <span class="tm">Not affiliated with or endorsed by Moneybird</span></div>
+</section>
+
+<!-- 3 · VAT treatment ==================================================== -->
+<section class="slide feature" data-n="3">
+  <div class="inner">
+    <div class="copy">
+      <div class="eyebrow"><span class="rule"></span> The VAT engine</div>
+      <h2>Reads the<br>address, picks<br>the rate</h2>
+      <p class="lede">Commerce decides what to charge. Bird decides where to book it.</p>
+      <ul class="points">
+        <li><span class="tick"></span> A VAT number that still paid 21% is <em>not</em> reverse charge</li>
+        <li><span class="tick"></span> One Stop Shop rates per destination country</li>
+      </ul>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="treat"><span class="who">Customer in your home country</span><span class="rate">21%<small>Domestic</small></span></div>
+    <div class="treat zero"><span class="who">EU business, valid VAT number,<br>no tax charged</span><span class="rate">0%<small>btw verlegd</small></span></div>
+    <div class="treat"><span class="who">EU consumer, One Stop Shop on</span><span class="rate">19%<small>DE rate</small></span></div>
+    <div class="treat zero"><span class="who">Outside the EU</span><span class="rate">0%<small>Export</small></span></div>
+  </div>
+  <div class="footer"><img src="assets/icon.svg" alt=""> <b>Bird</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-bird
+    <span class="tm">Not affiliated with or endorsed by Moneybird</span></div>
+</section>
+
+<!-- 4 · Matched on money ================================================= -->
+<section class="slide feature" data-n="4">
+  <div class="inner">
+    <div class="copy">
+      <div class="eyebrow"><span class="rule"></span> Rate matching</div>
+      <h2>Matched on<br>the money</h2>
+      <p class="lede">Commerce rounds tax to the cent per line. Divide it back out and 21% is not 21%
+        any more.</p>
+      <ul class="points">
+        <li><span class="tick"></span> A percentage look-up would refuse ordinary orders</li>
+        <li><span class="tick"></span> An unmapped rate refuses the order and names the gap</li>
+      </ul>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="calc mono">
+      <div class="line"><span class="k">Line net</span><span class="v">&euro;10.10</span></div>
+      <div class="line"><span class="k">Tax Commerce recorded</span><span class="v">&euro;2.12</span></div>
+      <div class="line bad"><span class="k">Derived percentage</span><span class="v">20.99%</span></div>
+      <div class="line good"><span class="k">Rate Bird books it under</span><span class="v">21% &nbsp;NL high</span></div>
+    </div>
+    <p class="note">Bird looks for the mapped rate whose arithmetic lands within a cent — not for a
+      percentage that no shop has ever configured.</p>
+  </div>
+  <div class="footer"><img src="assets/icon.svg" alt=""> <b>Bird</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-bird
+    <span class="tm">Not affiliated with or endorsed by Moneybird</span></div>
+</section>
+
+<!-- 5 · Reconciles ======================================================= -->
+<section class="slide feature" data-n="5">
+  <div class="inner">
+    <div class="copy">
+      <div class="eyebrow"><span class="rule"></span> Reconciliation</div>
+      <h2>Totals that<br>match the<br>bank feed</h2>
+      <p class="lede">The invoice total equals what the customer paid, because that is the number the
+        bank will show.</p>
+      <ul class="points">
+        <li><span class="tick"></span> The drift is booked at 0% — it is not revenue</li>
+        <li><span class="tick"></span> Or refuse the order instead, if you would rather know</li>
+      </ul>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="sheet mono">
+      <div class="head"><span class="c1">Line</span><span class="c2">Net</span><span class="c3">VAT</span><span class="c4">Gross</span></div>
+      <div class="row"><span class="c1">Enamel mug &times; 3</span><span class="c2">30.30</span><span class="c3">21%</span><span class="c4">36.66</span></div>
+      <div class="row"><span class="c1">Tote bag</span><span class="c2">14.05</span><span class="c3">21%</span><span class="c4">17.00</span></div>
+      <div class="row"><span class="c1">Shipping</span><span class="c2">4.96</span><span class="c3">21%</span><span class="c4">6.00</span></div>
+      <div class="row rounding"><span class="c1">Rounding</span><span class="c2">0.01</span><span class="c3">0%</span><span class="c4">0.01</span></div>
+      <div class="row total"><span class="c1">Order paid</span><span class="c2"></span><span class="c3"></span><span class="c4">59.67</span></div>
+    </div>
+    <p class="note">A cent of per-line VAT rounding belongs on a line that does not pretend to be revenue.</p>
+  </div>
+  <div class="footer"><img src="assets/icon.svg" alt=""> <b>Bird</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-bird
+    <span class="tm">Not affiliated with or endorsed by Moneybird</span></div>
+</section>
+
+<!-- 6 · Books it once ==================================================== -->
+<section class="slide feature" data-n="6">
+  <div class="inner">
+    <div class="copy">
+      <div class="eyebrow"><span class="rule"></span> Idempotency</div>
+      <h2>Books it<br>once</h2>
+      <p class="lede">A retried job, a double-clicked button and a webhook racing the queue all arrive
+        at the same unique index.</p>
+      <ul class="points">
+        <li><span class="tick"></span> Nothing Bird does can stop a customer paying</li>
+      </ul>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="lock"><span class="bar"></span> unique (order, kind, source) <span class="bar"></span></div>
+    <div class="step"><span class="num">1</span><span><b class="label">Is it already booked?</b><span class="sub">One row per order, per kind, per refund hash</span></span></div>
+    <div class="step"><span class="num">2</span><span><b class="label">Did a push die halfway?</b><span class="sub">Find it by reference in Moneybird and adopt it</span></span></div>
+    <div class="step"><span class="num">3</span><span><b class="label">Build the payload once</b><span class="sub">The same code path the Preview button shows you</span></span></div>
+    <div class="step"><span class="num">4</span><span><b class="label">Create, record, register payment</b><span class="sub">Failures retry; they never reach the checkout</span></span></div>
+  </div>
+  <div class="footer"><img src="assets/icon.svg" alt=""> <b>Bird</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-bird
+    <span class="tm">Not affiliated with or endorsed by Moneybird</span></div>
+</section>
+
+<!-- 7 · Console ========================================================== -->
+<section class="slide feature" data-n="7">
+  <div class="inner">
+    <div class="copy">
+      <div class="eyebrow"><span class="rule"></span> Console &amp; webhook</div>
+      <h2>Rehearses<br>before it<br>writes</h2>
+      <p class="lede">Preview the exact JSON, backfill with a dry run, and let Moneybird tell you when a
+        bank transfer finally lands.</p>
+    </div>
+  </div>
+  <div class="term">
+    <div class="chrome"></div>
+    <div class="body">
+      <div><span class="prompt">$</span> <span class="cmd">php craft bird/sync/status</span></div>
+      <div class="out">Connection <span class="ok">ok</span> &nbsp;·&nbsp; Pro &nbsp;·&nbsp; 1,284 booked, 3 failed</div>
+      <span class="blank"></span>
+      <div><span class="prompt">$</span> <span class="cmd">php craft bird/sync/backfill --since=2026-01-01 --dry-run</span></div>
+      <div class="out">218 orders would be booked. <span class="ok">Nothing sent.</span></div>
+      <div class="out">&nbsp;&nbsp;192 domestic &nbsp;·&nbsp; 19 reverse charge &nbsp;·&nbsp; 7 export</div>
+      <div class="out">&nbsp;&nbsp;<span class="warn">2 refused — no rate mapped for 9%</span></div>
+      <span class="blank"></span>
+      <div><span class="prompt">$</span> <span class="cmd">php craft bird/webhooks/install</span></div>
+      <div class="out">Registered. Signing secret stored. <span class="ok">Verifying deliveries.</span></div>
+    </div>
+  </div>
+  <div class="footer"><img src="assets/icon.svg" alt=""> <b>Bird</b> &nbsp;·&nbsp; justinholt.com/plugins/craft-bird
+    <span class="tm">Not affiliated with or endorsed by Moneybird</span></div>
+</section>
+
+<script>
+  var n = new URLSearchParams(location.search).get('s');
+  if (n) {
+    document.body.classList.add('single');
+    var el = document.querySelector('.slide[data-n="' + n + '"]');
+    if (el) el.classList.add('active');
+  }
+</script>
+</body>
+</html>

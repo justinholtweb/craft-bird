@@ -4,7 +4,11 @@
 
 Bird books Craft Commerce 5 orders into **Moneybird**, the Dutch accounting service, as sales
 invoices or external sales invoices, with EU-correct VAT. Distributed as `justinholtweb/craft-bird`.
-**Lite (free) + Pro.**
+**Lite (free) + Pro ($99 one-off, $49/year renewal).**
+
+Bird is **not affiliated with or endorsed by Moneybird**. Every piece of marketing — README,
+docs pages, the marketing site bands, and the promo slides — carries that disclaimer, and any
+new marketing surface must too.
 
 ## Why it exists
 
@@ -125,6 +129,24 @@ Read out of `developer.moneybird.com`'s embedded OpenAPI schema, not its prose �
 See `[[craft-plugin-gotchas]]` for family-wide traps, `[[project_craft_shipper]]` for the sibling
 Commerce integration whose conventions this follows, and `[[project_craft_freshh]]` for the
 FreshBooks equivalent.
+
+## Languages
+
+Moneybird publishes its own product in Dutch, Belgian Dutch, German and Belgian French, so Bird
+ships the same four plus English. There are **two separate locale namespaces**, and they
+deliberately do not match:
+
+| | Where | Ids | Why |
+|---|---|---|---|
+| CP strings | `src/translations/<id>/bird.php` | `en`, `nl`, `nl-BE`, `de`, `fr-BE` | Craft locale ids. Yii's `PhpMessageSource` merges `nl-BE` over `nl`, so **`nl-BE` is an overlay** of the 12 strings that actually differ. `fr-BE` has no `fr` to fall back to, so it is complete. |
+| Marketing site | `docs/<locale>/*.md` | `nl`, `nl-BE`, `de-DE`, `fr-BE` | URL segments on justinholt.com. **`de-DE`, not `de`** — the site maps a bare `de` to `hreflang="de-CH"` for the Swiss plugin next door. |
+
+A translated doc keeps the **English `slug`** (`installation`), so the URL is
+`/plugins/craft-bird/nl/docs/installation`. Only `title` and `summary` are translated.
+
+`tests/integration/checks.php` does not assert on translated copy. What guards the catalogues is
+that they are generated against the English key list, with placeholder survival (`{label}`,
+`{percentage}`, …) verified at emit time.
 
 ## Testing
 

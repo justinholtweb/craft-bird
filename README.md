@@ -11,6 +11,9 @@ customer actually paid is Commerce's. What Moneybird needs on top of the number 
 0% reverse-charged, 0% exported and 0% zero-rated are three different rates over there, and they
 land in three different boxes on a VAT return.
 
+> **Bird is an independent plugin.** It is not affiliated with, endorsed by, or sponsored by
+> Moneybird. "Moneybird" is a trademark of its respective owner.
+
 ## Requirements
 
 - Craft CMS 5.3+
@@ -40,6 +43,7 @@ Then open **Settings → Plugins → Bird**:
 
 | | Lite (free) | Pro |
 |---|---|---|
+| **Price** | **Free** | **$99**, $49/year renewal |
 | Sales invoices or external sales invoices | ✅ | ✅ |
 | Automatic push on paid / completed / a status | ✅ | ✅ |
 | Contact create, match and update | ✅ | ✅ |
@@ -158,6 +162,32 @@ timestamp, no request: it fails closed.
   looking for it.
 - Tokens and webhook secrets are redacted out of stored payloads.
 
+## Languages
+
+The control panel is translated into the languages Moneybird itself publishes in:
+
+| | |
+|---|---|
+| English | `en` |
+| Nederlands | `nl` |
+| Nederlands (België) | `nl-BE` |
+| Deutsch | `de` |
+| Français (Belgique) | `fr-BE` |
+
+Craft picks the catalogue from the user's language, so a Dutch bookkeeper and an English developer
+can share an install and each see their own. A string with no translation falls back to English
+rather than to a blank.
+
+The documentation at
+[justinholt.com/plugins/craft-bird](https://justinholt.com/plugins/craft-bird) is published in the
+same five.
+
 ## Support
 
 justin@justinholt.com
+
+## Trademarks
+
+Bird is an independent plugin and is not affiliated with, endorsed by, or sponsored by
+Moneybird. "Moneybird" is a trademark of its respective owner, used here only to describe
+what this plugin connects to.

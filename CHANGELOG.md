@@ -32,3 +32,6 @@ Initial release.
 - **Pro:** a signature-verified paid-invoice webhook that can move the Commerce order's status.
 - **Pro:** per-product-type ledger accounts.
 - **Pro:** a connection log with request and response payloads, redacted and pruned.
+- Control panel translated into Dutch, Belgian Dutch, German and Belgian French — the languages
+  Moneybird publishes in — alongside English.
+- Documentation published in the same five languages at justinholt.com/plugins/craft-bird.
