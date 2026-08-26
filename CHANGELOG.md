@@ -1,5 +1,11 @@
 # Release Notes for Bird
 
+## 5.0.1 - 2026-08-26
+
+### Fixed
+
+- **Every Bird console command, and `php craft` itself, died with a PHP fatal error.** `InspectController` declared a private `table()` helper, but Craft 5.10 added a public `table()` to `craft\console\Controller`. Lowering a base class method's visibility is a compile-time error, so the whole console application failed to boot — `php craft help` included, on any install with Bird enabled. The helper is now called `renderRows()`.
+
 ## 5.0.0
 
 Initial release.

@@ -22,7 +22,7 @@ class InspectController extends Controller
      */
     public function actionAdministrations(): int
     {
-        return $this->table(
+        return $this->renderRows(
             static fn() => Plugin::getInstance()->getApi()->getAdministrations(),
             static fn(array $row) => sprintf('%-22s %-28s %s %s', $row['id'] ?? '?', $row['name'] ?? '?', $row['country'] ?? '??', $row['currency'] ?? '???')
         );
@@ -33,7 +33,7 @@ class InspectController extends Controller
      */
     public function actionTaxRates(): int
     {
-        return $this->table(
+        return $this->renderRows(
             static fn() => Plugin::getInstance()->getApi()->getTaxRates(),
             static fn(array $row) => sprintf('%-22s %6s%%  %-4s %s', $row['id'] ?? '?', $row['percentage'] ?? '?', $row['country'] ?? '', $row['name'] ?? '')
         );
@@ -44,7 +44,7 @@ class InspectController extends Controller
      */
     public function actionLedgerAccounts(): int
     {
-        return $this->table(
+        return $this->renderRows(
             static fn() => Plugin::getInstance()->getApi()->getLedgerAccounts(),
             static fn(array $row) => sprintf('%-22s %-22s %s', $row['id'] ?? '?', $row['account_type'] ?? '?', $row['name'] ?? '')
         );
@@ -55,7 +55,7 @@ class InspectController extends Controller
      */
     public function actionFinancialAccounts(): int
     {
-        return $this->table(
+        return $this->renderRows(
             static fn() => Plugin::getInstance()->getApi()->getFinancialAccounts(),
             static fn(array $row) => sprintf('%-22s %-14s %s', $row['id'] ?? '?', $row['type'] ?? '', $row['name'] ?? $row['identifier'] ?? '')
         );
@@ -66,7 +66,7 @@ class InspectController extends Controller
      */
     public function actionWorkflows(): int
     {
-        return $this->table(
+        return $this->renderRows(
             static fn() => Plugin::getInstance()->getApi()->getWorkflows(),
             static fn(array $row) => sprintf('%-22s %-12s %s', $row['id'] ?? '?', $row['type'] ?? '', $row['name'] ?? '')
         );
@@ -123,7 +123,7 @@ class InspectController extends Controller
      * @param callable(): array<int, array<string, mixed>> $fetch
      * @param callable(array<string, mixed>): string $format
      */
-    private function table(callable $fetch, callable $format): int
+    private function renderRows(callable $fetch, callable $format): int
     {
         try {
             $rows = $fetch();
