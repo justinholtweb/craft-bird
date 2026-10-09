@@ -1,0 +1,45 @@
+{# The Dashboard tile. `overview` comes from Alerts::overview(). States are Bird's own (`failed`,
+   `pending`) and Moneybird's; `new` is a booked external sales invoice, which has no state there. #}
+{% set states = [
+    { state: 'failed', label: 'Failed'|t('bird'), color: 'red' },
+    { state: 'pending', label: 'Pending'|t('bird'), color: 'grey' },
+    { state: 'draft', label: 'Draft'|t('bird'), color: 'orange' },
+    { state: 'open', label: 'Open'|t('bird'), color: 'blue' },
+    { state: 'late', label: 'Late'|t('bird'), color: 'orange' },
+    { state: 'paid', label: 'Paid'|t('bird'), color: 'green' },
+    { state: 'new', label: 'Booked'|t('bird'), color: 'blue' },
+] %}
+
+{% for incident in overview.incidents %}
+    <p class="error" title="{{ incident.detail }}">
+        <span class="status red"></span><strong>{{ incident.label }}</strong>
+        {% if incident.detail %}<br><span class="smalltext">{{ incident.detail }}</span>{% endif %}
+    </p>
+{% endfor %}
+
+<table class="data fullwidth">
+    <tbody>
+        {% for row in states %}
+            {% set count = overview.counts[row.state] ?? 0 %}
+            <tr>
+                <th scope="row"><span class="status {{ count ? row.color : '' }}"></span>{{ row.label }}</th>
+                <td class="rightalign">
+                    {% if count %}
+                        <a href="{{ url('bird/documents', { state: row.state }) }}" class="{{ row.color == 'red' ? 'error' : '' }}">{{ count|number }}</a>
+                    {% else %}
+                        <span class="light">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<p class="light smalltext">
+    {% if overview.lastSynced %}
+        {{ 'Last booked in or read from Moneybird {when}.'|t('bird', { when: overview.lastSynced|timestamp('short') }) }}
+    {% else %}
+        {{ 'Nothing booked in Moneybird yet.'|t('bird') }}
+    {% endif %}
+    <a href="{{ url('bird/documents') }}">{{ 'All documents'|t('bird') }}</a>
+</p>

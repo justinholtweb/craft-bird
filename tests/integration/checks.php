@@ -1601,7 +1601,8 @@ try {
         }
     }
 
-    foreach ([Table::LOG, Table::CONTACTS] as $table) {
+    // Latch rows written while this run's fixtures were failing; the install measures its own afresh.
+    foreach ([Table::LOG, Table::CONTACTS, Table::ALERTS] as $table) {
         try {
             Craft::$app->getDb()->createCommand()->delete($table)->execute();
         } catch (Throwable $e) {

@@ -149,6 +149,9 @@ craft bird/webhooks/remove
 
 craft bird/log/prune --days=30            # het waard om in een cron te zetten
 craft bird/log/clear
+
+craft bird/alerts/check                   # de meldingen controleren; het waard om in een cron te zetten
+craft bird/alerts/test                    # een testmelding naar de opgeslagen ontvangers en webhook
 ```
 
 ## Het kan een checkout niet tegenhouden

@@ -5,7 +5,7 @@ order: 20
 summary: Elke instelling op het Bird-scherm, en waarom de standaardwaarden zijn wat ze zijn.
 ---
 
-Het instellingenscherm is **Instellingen → Plugins → Bird**. Eén pagina in acht onderdelen.
+Het instellingenscherm is **Instellingen → Plugins → Bird**. Eén pagina in negen onderdelen.
 
 ## Verbinding
 
@@ -119,6 +119,23 @@ Betalingen gaan naar `POST /sales_invoices/{id}/payments.json`. Moneybird heeft 
 | **Status bij betaald** | Verzet de Commerce-bestelling desgewenst naar deze status zodra Moneybird zegt dat de factuur betaald is. |
 
 Zie [de webhook](usage#de-webhook) voor waar hij voor is en hoe hij gecontroleerd wordt.
+
+## Meldingen
+
+| Instelling | Standaard | Opmerkingen |
+|---|---|---|
+| **Meldingen e-mailen naar** | Leeg | Adressen of een `$ENV`-verwijzing. Leeg betekent geen e-mail. |
+| **Slack- of Teams-webhook-URL** | Leeg | Zet hem in een omgevingsvariabele — de URL is zelf de sleutel. Alleen publieke hosts. |
+| **Webhookformaat** | Slack | Slack, Microsoft Teams of gewone JSON voor een eigen ontvanger. |
+| **Ondertekeningsgeheim voor de meldingswebhook** | Leeg | Voegt `X-Bird-Signature` toe voor een eigen ontvanger. |
+| **Melden als bestellingen niet geboekt kunnen worden** | Aan | |
+| **Mislukte documenten voor een melding** | 1 | |
+| **Melden als Moneybird het API-token weigert** | Aan | |
+| **Melden als het boeken stilvalt na** | 6 uur | 0 zet het uit. Vraagt om `bird/alerts/check` of `bird/sync/retry` in cron. |
+| **Rustperiode na herstel** | 60 minuten | |
+
+Eén bericht als een incident begint en één als het voorbij is, in Lite en Pro. [Meldingen](alerts)
+legt elk incident, de webhook en de dashboardwidget uit.
 
 ## Logboek *(Pro)*
 

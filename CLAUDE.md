@@ -54,6 +54,36 @@ totals that reconcile to the cent against a bank feed. Bird is those parts.
 - `{{%bird_log}}` — the connection log. No foreign key on `orderId`: a log row has to outlive the
   order it describes, which is the whole point of keeping one.
 
+- `{{%bird_alerts}}` — the failure-alert latch, one row per incident, unique on `incident`.
+
+### Failure alerts (ported from Erpy via Lexies, the Theme 1 reference)
+
+`services\Alerts` is Erpy's alert service with the connection taken out, as in Lexies — Bird books
+into one administration per install, so the latch is keyed on `incident` alone. Three incidents:
+
+- **documents** — `failed` rows (invoices and credit notes) ≥ `alertDocumentThreshold` (1). Opens at
+  the threshold, closes only at zero. Measured from `Documents::save()` → `Alerts::afterDocument()`
+  (and `deleteById()`, since forgetting the last failure ends it), so every path that changes a
+  document is covered without cron.
+- **auth** — a *final* 401/403 from `Api::request()` → `noteAuthFailure()`; any 2xx →
+  `noteAuthSuccess()` (one conditional UPDATE per minute per process). 422/429/5xx/connection
+  errors are not auth failures.
+- **stalled** — completed orders with no invoice row whose trigger made them due more than
+  `alertStallHours` ago (`Alerts::dueSince()` mirrors `handleTrigger()`: payment for `paid`, order
+  date for `complete`, last change while in the status for `status`, nothing for `manual`; zero
+  totals skipped when `skipZeroTotalOrders`), plus `pending` rows that old. Lookback 7 days and never
+  before the install date. Opened only by `check()` (`bird/alerts/check`, `bird/sync/retry`,
+  `bird/sync/backfill`); `afterDocument()` re-measures it only while it is open.
+
+`check()` does nothing until `isConfigured()` (token + administration). Unchanged from Erpy and not
+to be changed here: the conditional-UPDATE claim/release, redaction (API token, the Moneybird
+webhook's signing secret and the alert webhook secret by value, credential patterns, 500-char cap),
+the webhook through `webhookTarget()` (`helpers\Ip` is the family copy — keep it identical), the
+`X-Bird-Signature` HMAC, and every alert path being fail-open. Also: `widgets\HealthWidget`
+("Moneybird bookings"), a `Cp::EVENT_REGISTER_ALERTS` banner (`bird-viewDocuments`), and the
+admin-only POST `bird/alerts/test` action, which reads saved settings only. The alert webhook is
+not the Moneybird webhook: different direction, different secret.
+
 ### The VAT position
 
 **Commerce decides what to charge; Bird decides where to book it.** Re-deriving tax here would give
@@ -155,6 +185,7 @@ No local PHP on this Mac. Everything runs inside the plugin-testing container:
 ```sh
 cd ~/Sites/plugin-testing
 ddev exec php /var/www/craft-bird/tests/integration/checks.php   # 161 checks
+docker exec -w /var/www/html ddev-plugin-testing-web php /var/www/craft-bird/tests/integration/alerts.php # 67: failure alerts, widget, banner, test action over HTTP
 ddev exec bash -c 'find /var/www/craft-bird/src -name "*.php" -print0 | xargs -0 -n1 php -l'
 ```
 
@@ -168,6 +199,12 @@ dgst` — unsigned, stale and correctly-signed all behave.
 `ModelEvent` while Craft passes an `ElementEvent`, so **every element save in the harness fatals**
 while it is enabled. `checks.php` detaches that handler in-process (never persisted). That is a bug
 in Penny, not in Bird.
+
+`alerts.php` keeps settings in memory, stubs Moneybird by putting a `MockHandler` client in Craft's
+DI container (`Api` builds its client per call with `Craft::createGuzzleClient()`), and isolates
+its stall checks with the status trigger and an order status no other harness order uses. Its
+fixtures are made with the trigger switched to manual: moving an order into the trigger status
+fires Bird's own trigger, which books it (or, with no contact, fails it) before the test looks.
 
 ## Coding conventions
 

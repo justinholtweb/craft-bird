@@ -5,7 +5,7 @@ order: 20
 summary: Jede Einstellung im Bird-Bildschirm, und warum die Voreinstellungen so sind, wie sie sind.
 ---
 
-Der Einstellungsbildschirm ist **Einstellungen → Plugins → Bird**. Eine Seite in acht Abschnitten.
+Der Einstellungsbildschirm ist **Einstellungen → Plugins → Bird**. Eine Seite in neun Abschnitten.
 
 ## Verbindung
 
@@ -120,6 +120,23 @@ Zahlungen gehen an `POST /sales_invoices/{id}/payments.json`. Moneybird hat den 
 | **Status bei bezahlt** | Setzt die Commerce-Bestellung auf Wunsch auf diesen Status, sobald Moneybird die Rechnung als bezahlt meldet. |
 
 Siehe [den Webhook](usage#der-webhook) dazu, wofür er da ist und wie er geprüft wird.
+
+## Benachrichtigungen
+
+| Einstellung | Standard | Hinweise |
+|---|---|---|
+| **Benachrichtigungen per E-Mail an** | Leer | Adressen oder ein `$ENV`-Verweis. Leer bedeutet: keine E-Mail. |
+| **Slack- oder Teams-Webhook-URL** | Leer | Am besten in einer Umgebungsvariable — die URL ist selbst der Zugangsschlüssel. Nur öffentliche Hosts. |
+| **Webhook-Format** | Slack | Slack, Microsoft Teams oder einfaches JSON für einen eigenen Empfänger. |
+| **Signaturgeheimnis für den Benachrichtigungs-Webhook** | Leer | Fügt `X-Bird-Signature` für einen eigenen Empfänger hinzu. |
+| **Benachrichtigen, wenn Bestellungen nicht gebucht werden können** | An | |
+| **Fehlgeschlagene Belege bis zur Benachrichtigung** | 1 | |
+| **Benachrichtigen, wenn Moneybird das API-Token ablehnt** | An | |
+| **Benachrichtigen, wenn das Buchen stockt nach** | 6 Stunden | 0 schaltet es ab. Braucht `bird/alerts/check` oder `bird/sync/retry` im Cron. |
+| **Ruhezeit nach einer Erholung** | 60 Minuten | |
+
+Eine Nachricht, wenn ein Vorfall beginnt, und eine, wenn er vorbei ist, in Lite und Pro.
+[Benachrichtigungen](alerts) erklärt jeden Vorfall, den Webhook und das Dashboard-Widget.
 
 ## Protokoll *(Pro)*
 

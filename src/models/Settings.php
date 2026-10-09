@@ -260,6 +260,65 @@ class Settings extends Model
      */
     public string $paidOrderStatusHandle = '';
 
+    // Alerts
+    // -------------------------------------------------------------------------
+    // Nothing here is `required`: an empty recipient list and an empty webhook URL simply mean
+    // nobody is told, and a fresh install must be able to save every other setting.
+
+    /**
+     * Comma- or newline-separated addresses, or an `$ENV` reference that resolves to them.
+     */
+    public string $alertRecipients = '';
+
+    /**
+     * A Slack or Teams incoming-webhook URL (or `$ENV`). Sent through the SSRF guard.
+     */
+    public string $alertWebhookUrl = '';
+
+    /**
+     * `slack`, `teams` or `json` — the shape of the webhook body.
+     */
+    public string $alertWebhookFormat = 'slack';
+
+    /**
+     * Optional. When set, the webhook carries an `X-Bird-Signature` HMAC of its body.
+     */
+    public string $alertWebhookSecret = '';
+
+    /**
+     * Alert when an invoice or credit note failed to book: Moneybird refused it, or a mapping is
+     * missing (an unmapped VAT rate, no contact to invoice).
+     */
+    public bool $alertOnDocuments = true;
+
+    /**
+     * This many failed documents open the incident. One is right for most shops: a single order
+     * missing from Moneybird is revenue missing from the VAT return.
+     */
+    public int $alertDocumentThreshold = 1;
+
+    /**
+     * A 401 or 403 from Moneybird: the token was revoked, expired or lacks a scope.
+     */
+    public bool $alertOnAuthFailure = true;
+
+    /**
+     * A completed order due a booking that still has none after this many hours is a stall (the
+     * queue is not running, or a push died half way). 0 switches it off.
+     */
+    public int $alertStallHours = 6;
+
+    /**
+     * An incident that reopens this soon after its recovery message waits out the rest.
+     */
+    public int $alertCooldownMinutes = 60;
+
+    /**
+     * Config-file only: let the alert webhook reach private, loopback and link-local hosts (a
+     * self-hosted Mattermost on the LAN). The scheme and no-redirect rules still hold.
+     */
+    public bool $allowPrivateAlertWebhookHosts = false;
+
     // Logging
     // -------------------------------------------------------------------------
 
@@ -314,7 +373,68 @@ class Settings extends Model
             [['sendDeliveryMethod'], 'in', 'range' => ['Email', 'Simplerinvoicing', 'Post', 'Manual']],
             [['apiToken', 'administrationId', 'webhookSecret'], 'string'],
             [['taxRateMap', 'ossTaxRateMap', 'ledgerAccountMap'], 'safe'],
+            [['alertOnDocuments', 'alertOnAuthFailure', 'allowPrivateAlertWebhookHosts'], 'boolean'],
+            [['alertDocumentThreshold'], 'integer', 'min' => 1, 'max' => 10000],
+            [['alertStallHours'], 'integer', 'min' => 0, 'max' => 720],
+            [['alertCooldownMinutes'], 'integer', 'min' => 0, 'max' => 10080],
+            [['alertWebhookFormat'], 'filter', 'filter' => fn($value) => self::oneOf($value, ['slack', 'teams', 'json'], 'slack')],
+            [['alertWebhookFormat'], 'in', 'range' => ['slack', 'teams', 'json']],
+            [['alertRecipients', 'alertWebhookUrl', 'alertWebhookSecret'], 'string', 'max' => 2000],
+            [['alertRecipients'], 'validateRecipients'],
+            [['alertWebhookUrl'], 'validateAlertWebhookUrl'],
         ];
+    }
+
+    /**
+     * Every address must be one, when there are any. An `$ENV` reference that is not set yet is
+     * allowed — a staging site legitimately has no recipients.
+     */
+    public function validateRecipients(string $attribute): void
+    {
+        foreach ($this->recipientList(false) as $address) {
+            if (filter_var($address, FILTER_VALIDATE_EMAIL) === false) {
+                $this->addError($attribute, Craft::t('bird', '“{address}” is not an email address.', ['address' => $address]));
+            }
+        }
+    }
+
+    /**
+     * Only the shape is checked here. Where the host resolves is checked at send time, every time,
+     * because DNS can change between a save and a send.
+     */
+    public function validateAlertWebhookUrl(string $attribute): void
+    {
+        $url = trim((string)App::parseEnv($this->alertWebhookUrl));
+
+        if ($url === '' || str_starts_with($url, '$')) {
+            return;
+        }
+
+        $scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
+
+        if (!in_array($scheme, ['http', 'https'], true) || !parse_url($url, PHP_URL_HOST)) {
+            $this->addError($attribute, Craft::t('bird', 'Only http:// and https:// webhook URLs are allowed.'));
+        }
+    }
+
+    /**
+     * The alert recipients, with `$ENV` resolved.
+     *
+     * @return string[]
+     */
+    public function recipientList(bool $validOnly = true): array
+    {
+        $raw = trim((string)App::parseEnv($this->alertRecipients));
+
+        if ($raw === '' || str_starts_with($raw, '$')) {
+            return [];
+        }
+
+        $list = array_values(array_unique(array_filter(array_map('trim', preg_split('/[\s,;]+/', $raw) ?: []))));
+
+        return $validOnly
+            ? array_values(array_filter($list, static fn(string $a) => filter_var($a, FILTER_VALIDATE_EMAIL) !== false))
+            : $list;
     }
 
     // Env-parsed accessors

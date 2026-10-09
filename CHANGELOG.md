@@ -1,5 +1,15 @@
 # Release Notes for Bird
 
+## Unreleased
+
+### Added
+
+- **Failure alerts.** One email — and optionally a Slack, Teams or signed JSON webhook — when booking into Moneybird gets into trouble, and one when it recovers, never one per order. Three incidents: orders that failed to book (Moneybird refused them, or a VAT rate or contact is missing), Moneybird refusing the API token (a 401 or 403), and booking that has stalled — completed orders still not in Moneybird hours after the trigger said they were due, which is what a queue that is not running looks like. Set them up under **Settings → Plugins → Bird → Alerts**; nothing is sent until you add recipients or a webhook. In Lite and Pro.
+- A **Moneybird bookings** Dashboard widget: documents by state, each linked to the Documents screen filtered to it, plus any open incident.
+- A banner across the control panel while an incident is open, for people who can view Moneybird documents.
+- `php craft bird/alerts/check` (put it, or `bird/sync/retry`, on cron to catch stalls) and `php craft bird/alerts/test`, and a **Send a test alert** button on the settings screen.
+- `Alerts::EVENT_BEFORE_NOTIFY`, to reword or swallow an alert.
+
 ## 5.0.1 - 2026-08-26
 
 ### Fixed

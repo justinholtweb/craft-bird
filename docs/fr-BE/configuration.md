@@ -5,7 +5,7 @@ order: 20
 summary: Chaque réglage de l'écran Bird, et pourquoi les valeurs par défaut sont ce qu'elles sont.
 ---
 
-L'écran de réglages est **Réglages → Plugins → Bird**. Une page en huit sections.
+L'écran de réglages est **Réglages → Plugins → Bird**. Une page en neuf sections.
 
 ## Connexion
 
@@ -120,6 +120,23 @@ point de terminaison `register_payment` ; Bird ne l'utilise pas.
 | **Statut à la facture payée** | Fait éventuellement passer la commande Commerce à ce statut dès que Moneybird annonce la facture payée. |
 
 Voir [le webhook](usage#le-webhook) pour ce à quoi il sert et comment il est vérifié.
+
+## Alertes
+
+| Réglage | Par défaut | Remarques |
+|---|---|---|
+| **Envoyer les alertes par e-mail à** | Vide | Des adresses ou une référence `$ENV`. Vide : aucun e-mail. |
+| **URL de webhook Slack ou Teams** | Vide | De préférence dans une variable d'environnement — l'URL est elle-même l'identifiant. Hôtes publics uniquement. |
+| **Format du webhook** | Slack | Slack, Microsoft Teams ou JSON simple pour votre propre récepteur. |
+| **Secret de signature du webhook d'alerte** | Vide | Ajoute `X-Bird-Signature` pour votre propre récepteur. |
+| **Alerter quand des commandes ne peuvent pas être comptabilisées** | Activé | |
+| **Documents en échec avant une alerte** | 1 | |
+| **Alerter quand Moneybird refuse le jeton d'API** | Activé | |
+| **Alerter quand la comptabilisation est bloquée depuis** | 6 heures | 0 désactive. Nécessite `bird/alerts/check` ou `bird/sync/retry` en cron. |
+| **Période de silence après un rétablissement** | 60 minutes | |
+
+Un message quand un incident commence et un autre quand il se termine, en Lite comme en Pro.
+[Alertes](alerts) explique chaque incident, le webhook et le widget du tableau de bord.
 
 ## Journal *(Pro)*
 

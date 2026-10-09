@@ -8,13 +8,20 @@ use craft\base\Plugin as BasePlugin;
 use craft\commerce\elements\Order;
 use craft\commerce\events\OrderStatusEvent;
 use craft\commerce\services\OrderHistories;
+use craft\events\RegisterComponentTypesEvent;
+use craft\events\RegisterCpAlertsEvent;
 use craft\events\RegisterUrlRulesEvent;
 use craft\events\RegisterUserPermissionsEvent;
+use craft\helpers\Cp;
+use craft\helpers\Html;
+use craft\helpers\UrlHelper;
+use craft\services\Dashboard;
 use craft\services\UserPermissions;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\UrlManager;
 use craft\web\View;
 use justinholtweb\bird\models\Settings;
+use justinholtweb\bird\services\Alerts;
 use justinholtweb\bird\services\Api;
 use justinholtweb\bird\services\Contacts;
 use justinholtweb\bird\services\Documents;
@@ -25,11 +32,13 @@ use justinholtweb\bird\services\Sync;
 use justinholtweb\bird\services\Vat;
 use justinholtweb\bird\services\Webhooks;
 use justinholtweb\bird\twig\BirdVariable;
+use justinholtweb\bird\widgets\HealthWidget;
 use yii\base\Event;
 
 /**
  * Bird — Moneybird bookkeeping for Craft Commerce.
  *
+ * @property-read Alerts $alerts
  * @property-read Api $api
  * @property-read Contacts $contacts
  * @property-read Documents $documents
@@ -48,7 +57,7 @@ class Plugin extends BasePlugin
     public const EDITION_LITE = 'lite';
     public const EDITION_PRO = 'pro';
 
-    public string $schemaVersion = '5.0.0';
+    public string $schemaVersion = '5.1.0';
     public bool $hasCpSettings = true;
     public bool $hasCpSection = true;
 
@@ -70,6 +79,7 @@ class Plugin extends BasePlugin
     {
         return [
             'components' => [
+                'alerts' => ['class' => Alerts::class],
                 'api' => ['class' => Api::class],
                 'contacts' => ['class' => Contacts::class],
                 'documents' => ['class' => Documents::class],
@@ -93,6 +103,8 @@ class Plugin extends BasePlugin
         $this->_registerTwigVariable();
         $this->_registerPermissions();
         $this->_registerCpRoutes();
+        $this->_registerWidgets();
+        $this->_registerCpAlerts();
 
         // Bird can be installed while Commerce is disabled or mid-upgrade, and everything below
         // this line touches an order.
@@ -119,6 +131,11 @@ class Plugin extends BasePlugin
     public function isPro(): bool
     {
         return $this->is(self::EDITION_PRO, '>=');
+    }
+
+    public function getAlerts(): Alerts
+    {
+        return $this->get('alerts');
     }
 
     public function getApi(): Api
@@ -279,6 +296,45 @@ class Plugin extends BasePlugin
                 $event->rules['bird/documents/<documentId:\d+>'] = 'bird/documents/detail';
                 $event->rules['bird/log'] = 'bird/log/index';
                 $event->rules['bird/log/<entryId:\d+>'] = 'bird/log/detail';
+            }
+        );
+    }
+
+    private function _registerWidgets(): void
+    {
+        Event::on(
+            Dashboard::class,
+            Dashboard::EVENT_REGISTER_WIDGET_TYPES,
+            static function(RegisterComponentTypesEvent $event) {
+                $event->types[] = HealthWidget::class;
+            }
+        );
+    }
+
+    /**
+     * A banner across the CP while an alert is open, for the people who can do something about it.
+     *
+     * One query on a three-row table per CP page. Fail-open: a CP that cannot render because an
+     * alert could not be read would be a worse outage than the one being reported.
+     */
+    private function _registerCpAlerts(): void
+    {
+        Event::on(
+            Cp::class,
+            Cp::EVENT_REGISTER_ALERTS,
+            function(RegisterCpAlertsEvent $event) {
+                try {
+                    if (!Craft::$app->getUser()->checkPermission('bird-viewDocuments')) {
+                        return;
+                    }
+
+                    foreach ($this->getAlerts()->openIncidents() as $incident) {
+                        $event->alerts[] = Html::encode(Craft::t('bird', 'Bird: {label}.', ['label' => $incident['label']]))
+                            . ' ' . Html::a(Craft::t('bird', 'Open documents'), UrlHelper::cpUrl('bird/documents'), ['class' => 'go']);
+                    }
+                } catch (\Throwable $e) {
+                    Craft::warning('Bird could not read its alerts: ' . $e->getMessage(), __METHOD__);
+                }
             }
         );
     }

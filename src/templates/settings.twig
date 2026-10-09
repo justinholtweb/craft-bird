@@ -507,6 +507,110 @@
 
 {# ------------------------------------------------------------------ #}
 <hr>
+<h2>{{ 'Alerts'|t('bird') }}</h2>
+
+<p class="light">{{ 'One message when booking into Moneybird gets into trouble and one when it is fine again — never one per failure. A failed booking and a refused token are noticed the moment they happen. A stall is the absence of activity, so only a scheduled check can notice it: put `php craft bird/alerts/check` on cron (`bird/sync/retry` runs it too).'|t('bird') }}</p>
+
+{{ forms.autosuggestField({
+    label: 'Email alerts to'|t('bird'),
+    instructions: 'Addresses separated by commas, or an environment variable. Leave empty for no email.'|t('bird'),
+    id: 'alertRecipients',
+    name: 'alertRecipients',
+    suggestEnvVars: true,
+    value: settings.alertRecipients,
+    errors: settings.getErrors('alertRecipients')
+}) }}
+
+{{ forms.autosuggestField({
+    label: 'Slack or Teams webhook URL'|t('bird'),
+    instructions: 'Optional. An incoming-webhook URL — best kept in an environment variable, because the URL is the credential. Only public hosts are allowed and redirects are never followed.'|t('bird'),
+    id: 'alertWebhookUrl',
+    name: 'alertWebhookUrl',
+    suggestEnvVars: true,
+    value: settings.alertWebhookUrl,
+    errors: settings.getErrors('alertWebhookUrl')
+}) }}
+
+{{ forms.selectField({
+    label: 'Webhook format'|t('bird'),
+    id: 'alertWebhookFormat',
+    name: 'alertWebhookFormat',
+    options: [
+        { value: 'slack', label: 'Slack'|t('bird') },
+        { value: 'teams', label: 'Microsoft Teams'|t('bird') },
+        { value: 'json', label: 'Plain JSON (your own receiver)'|t('bird') },
+    ],
+    value: settings.alertWebhookFormat,
+    errors: settings.getErrors('alertWebhookFormat')
+}) }}
+
+{{ forms.autosuggestField({
+    label: 'Alert webhook signing secret'|t('bird'),
+    instructions: 'Optional. When set, each alert webhook carries `X-Bird-Timestamp` and `X-Bird-Signature: sha256=…`, an HMAC of `timestamp.body`, so your own receiver can verify it. Slack and Teams ignore it.'|t('bird'),
+    id: 'alertWebhookSecret',
+    name: 'alertWebhookSecret',
+    suggestEnvVars: true,
+    value: settings.alertWebhookSecret
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Alert when orders fail to book'|t('bird'),
+    instructions: 'Invoices or credit notes Moneybird refused, or Bird would not send — an unmapped VAT rate, no contact to invoice.'|t('bird'),
+    id: 'alertOnDocuments',
+    name: 'alertOnDocuments',
+    on: settings.alertOnDocuments
+}) }}
+
+{{ forms.textField({
+    label: 'Failed documents that open an alert'|t('bird'),
+    instructions: 'How many need to have failed before you are told. It clears once every one is booked or forgotten.'|t('bird'),
+    id: 'alertDocumentThreshold',
+    name: 'alertDocumentThreshold',
+    type: 'number',
+    size: 5,
+    value: settings.alertDocumentThreshold,
+    errors: settings.getErrors('alertDocumentThreshold')
+}) }}
+
+{{ forms.lightswitchField({
+    label: 'Alert when Moneybird refuses the API token'|t('bird'),
+    instructions: 'A 401 or 403: the token was revoked, expired or lacks a scope. Nothing reaches Moneybird until somebody fixes it.'|t('bird'),
+    id: 'alertOnAuthFailure',
+    name: 'alertOnAuthFailure',
+    on: settings.alertOnAuthFailure
+}) }}
+
+{{ forms.textField({
+    label: 'Alert when booking stalls after'|t('bird'),
+    instructions: 'Hours a completed order may wait to be booked — or a push may sit in “pending” — before it counts as stalled. Zero switches it off.'|t('bird'),
+    id: 'alertStallHours',
+    name: 'alertStallHours',
+    type: 'number',
+    size: 5,
+    value: settings.alertStallHours,
+    errors: settings.getErrors('alertStallHours')
+}) }}
+
+{{ forms.textField({
+    label: 'Quiet period after a recovery'|t('bird'),
+    instructions: 'Minutes. An incident that comes straight back is reported when this ends, if it is still happening — so a flapping connection cannot fill an inbox.'|t('bird'),
+    id: 'alertCooldownMinutes',
+    name: 'alertCooldownMinutes',
+    type: 'number',
+    size: 5,
+    value: settings.alertCooldownMinutes,
+    errors: settings.getErrors('alertCooldownMinutes')
+}) }}
+
+<div class="field">
+    <div class="buttons">
+        <button type="button" class="btn" id="bird-test-alert">{{ 'Send a test alert'|t('bird') }}</button>
+    </div>
+    <p class="light" id="bird-test-alert-result">{{ 'Uses the saved recipients and webhook — save first.'|t('bird') }}</p>
+</div>
+
+{# ------------------------------------------------------------------ #}
+<hr>
 <h2>{{ 'Logging'|t('bird') }}</h2>
 
 {{ forms.lightswitchField({
@@ -648,6 +752,20 @@
                 })
                 .catch(function() { say('bird-webhook-result', {{ 'Couldn’t install the webhook.'|t('bird')|json_encode|raw }}, true); })
                 .finally(function() { install.classList.remove('loading'); });
+        });
+    }
+
+    var testAlert = document.getElementById('bird-test-alert');
+    if (testAlert) {
+        testAlert.addEventListener('click', function() {
+            testAlert.classList.add('loading');
+            post('bird/alerts/test')
+                .then(function(response) { say('bird-test-alert-result', response.data.message, !response.data.success); })
+                .catch(function(error) {
+                    var message = error && error.response && error.response.data && error.response.data.message;
+                    say('bird-test-alert-result', message || {{ 'Couldn’t send a test alert.'|t('bird')|json_encode|raw }}, true);
+                })
+                .finally(function() { testAlert.classList.remove('loading'); });
         });
     }
 

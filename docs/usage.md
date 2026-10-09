@@ -144,6 +144,9 @@ craft bird/webhooks/remove
 
 craft bird/log/prune --days=30            # worth putting on a cron
 craft bird/log/clear
+
+craft bird/alerts/check                   # evaluate the failure alerts; worth putting on a cron
+craft bird/alerts/test                    # send a sample to the saved recipients and webhook
 ```
 
 ## It cannot stop a checkout

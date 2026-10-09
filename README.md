@@ -52,6 +52,7 @@ Then open **Settings → Plugins → Bird**:
 | Rounding reconciliation | ✅ | ✅ |
 | Panel on Commerce's order screen, with a byte-exact preview | ✅ | ✅ |
 | Documents index, `craft.bird.*` Twig API, console commands | ✅ | ✅ |
+| Failure alerts by email, Slack or Teams, and a Dashboard widget | ✅ | ✅ |
 | **One Stop Shop** — per-country EU consumer rates | — | ✅ |
 | **Credit notes** for Commerce refunds | — | ✅ |
 | **Send the invoice** from Moneybird | — | ✅ |
@@ -136,6 +137,9 @@ craft bird/webhooks/info
 craft bird/webhooks/remove
 
 craft bird/log/prune --days=30
+
+craft bird/alerts/check                   # put this (or bird/sync/retry) on cron
+craft bird/alerts/test
 ```
 
 ## The webhook
@@ -148,6 +152,17 @@ at checkout, which misses every bank transfer.
 delivery is verified against `Moneybird-Signature` — HMAC-SHA256 over `{timestamp}.{raw body}`,
 rejected if the timestamp is more than five minutes out. No secret, no signature, no stale
 timestamp, no request: it fails closed.
+
+## Alerts
+
+Bird sends one message when booking into Moneybird gets into trouble and one when it recovers —
+never one per order. Three incidents: orders that **failed to book** (Moneybird refused them, or a
+VAT rate or contact is missing), Moneybird **refusing the API token** (401/403), and booking that
+has **stalled** — completed orders still not in Moneybird hours after they were due, which is what
+a queue that is not running looks like. Email through Craft's mailer, plus an optional Slack, Teams
+or signed JSON webhook (public hosts only, pinned, no redirects). A **Moneybird bookings**
+Dashboard widget and a CP banner show the same incidents. In Lite and Pro. See
+[Alerts](docs/alerts.md).
 
 ## Safety
 

@@ -151,6 +151,9 @@ craft bird/webhooks/remove
 
 craft bird/log/prune --days=30            # mérite une tâche cron
 craft bird/log/clear
+
+craft bird/alerts/check                   # vérifier les alertes ; mérite une tâche cron
+craft bird/alerts/test                    # une alerte de test vers les destinataires et le webhook enregistrés
 ```
 
 ## Il ne peut pas bloquer une commande

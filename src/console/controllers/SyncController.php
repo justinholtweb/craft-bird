@@ -172,6 +172,9 @@ class SyncController extends Controller
 
         $this->stdout("\n$booked booked, $failed failed.\n");
 
+        // A backfill is what ends a stall; let the alert say so now rather than at the next cron.
+        Plugin::getInstance()->getAlerts()->check();
+
         return $failed === 0 ? ExitCode::OK : ExitCode::UNSPECIFIED_ERROR;
     }
 
@@ -181,6 +184,9 @@ class SyncController extends Controller
     public function actionRetry(): int
     {
         $results = Plugin::getInstance()->getSync()->retryFailed(max(1, $this->limit));
+
+        // The command most likely to be on cron, so it doubles as the stall check.
+        Plugin::getInstance()->getAlerts()->check();
 
         if ($results === []) {
             $this->stdout("Nothing to retry.\n", Console::FG_GREEN);

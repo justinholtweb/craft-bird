@@ -5,7 +5,7 @@ order: 20
 summary: Every setting on the Bird screen, and why the defaults are what they are.
 ---
 
-The settings screen is **Settings → Plugins → Bird**. It is one page in eight sections.
+The settings screen is **Settings → Plugins → Bird**. It is one page in nine sections.
 
 ## Connection
 
@@ -117,6 +117,23 @@ older `register_payment` endpoint; Bird does not use it.
 | **Paid order status** | Optionally move the Commerce order to this status when Moneybird says the invoice is paid. |
 
 See [the webhook](usage#the-webhook) for what it is for and how it is verified.
+
+## Alerts
+
+| Setting | Default | Notes |
+|---|---|---|
+| **Email alerts to** | Empty | Addresses or an `$ENV` reference. Empty means no email. |
+| **Slack or Teams webhook URL** | Empty | Keep it in an environment variable — the URL is the credential. Public hosts only. |
+| **Webhook format** | Slack | Slack, Microsoft Teams, or plain JSON for your own receiver. |
+| **Alert webhook signing secret** | Empty | Adds `X-Bird-Signature` for your own receiver. |
+| **Alert when orders fail to book** | On | |
+| **Failed documents that open an alert** | 1 | |
+| **Alert when Moneybird refuses the API token** | On | |
+| **Alert when booking stalls after** | 6 hours | 0 switches it off. Needs `bird/alerts/check` or `bird/sync/retry` on cron. |
+| **Quiet period after a recovery** | 60 minutes | |
+
+One message when an incident starts and one when it clears, in Lite and Pro. [Alerts](alerts)
+explains each incident, the webhook and the Dashboard widget.
 
 ## Logging *(Pro)*
 

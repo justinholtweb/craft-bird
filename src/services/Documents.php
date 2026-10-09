@@ -10,6 +10,7 @@ use craft\helpers\StringHelper;
 use DateTime;
 use justinholtweb\bird\db\Table;
 use justinholtweb\bird\models\Document;
+use justinholtweb\bird\Plugin;
 
 /**
  * The documents Bird has booked, as rows.
@@ -162,19 +163,21 @@ class Documents extends Component
         if ($existingId) {
             $db->createCommand()->update(Table::DOCUMENTS, $values, ['id' => $existingId])->execute();
             $document->id = (int)$existingId;
+        } else {
+            $db->createCommand()->insert(Table::DOCUMENTS, $values + [
+                'orderId' => $document->orderId,
+                'kind' => $document->kind,
+                'sourceKey' => $document->sourceKey,
+                'dateCreated' => $now,
+                'uid' => StringHelper::UUID(),
+            ])->execute();
 
-            return $document;
+            $document->id = (int)$db->getLastInsertID(Craft::$app->getDb()->getSchema()->getRawTableName(Table::DOCUMENTS));
         }
 
-        $db->createCommand()->insert(Table::DOCUMENTS, $values + [
-            'orderId' => $document->orderId,
-            'kind' => $document->kind,
-            'sourceKey' => $document->sourceKey,
-            'dateCreated' => $now,
-            'uid' => StringHelper::UUID(),
-        ])->execute();
-
-        $document->id = (int)$db->getLastInsertID(Craft::$app->getDb()->getSchema()->getRawTableName(Table::DOCUMENTS));
+        // Every change of state passes through here, so this is where a failed booking — or the
+        // last one being cleared up — reaches the failure alerts. Fail-open inside.
+        Plugin::getInstance()->getAlerts()->afterDocument($document);
 
         return $document;
     }
@@ -185,9 +188,20 @@ class Documents extends Component
      */
     public function deleteById(int $id): bool
     {
-        return (bool)Craft::$app->getDb()->createCommand()
+        $deleted = (bool)Craft::$app->getDb()->createCommand()
             ->delete(Table::DOCUMENTS, ['id' => $id])
             ->execute();
+
+        if ($deleted) {
+            // Forgetting the last failed document is one way an incident ends.
+            try {
+                Plugin::getInstance()->getAlerts()->check([Alerts::INCIDENT_DOCUMENTS]);
+            } catch (\Throwable $e) {
+                Craft::warning('Bird could not evaluate alerts after a document was forgotten: ' . $e->getMessage(), __METHOD__);
+            }
+        }
+
+        return $deleted;
     }
 
     /**

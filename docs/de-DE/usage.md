@@ -151,6 +151,9 @@ craft bird/webhooks/remove
 
 craft bird/log/prune --days=30            # gehört in einen Cron
 craft bird/log/clear
+
+craft bird/alerts/check                   # Benachrichtigungen prüfen; gehört in einen Cron
+craft bird/alerts/test                    # eine Testbenachrichtigung an die gespeicherten Empfänger und den Webhook
 ```
 
 ## Es kann keinen Checkout aufhalten

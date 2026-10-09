@@ -387,6 +387,9 @@ class Api extends Component
             if ($status >= 200 && $status < 300) {
                 $this->log($method, $path, $status, $started, LogEntry::LEVEL_INFO, null, $options, $body);
 
+                // The token works: if an authentication alert is open, this is its recovery.
+                Plugin::getInstance()->getAlerts()->noteAuthSuccess();
+
                 $decoded = $body !== '' ? Json::decodeIfJson($body) : [];
 
                 return is_array($decoded) ? $decoded : [];
@@ -402,6 +405,17 @@ class Api extends Component
 
             $message = $this->describe($status, $body);
             $this->log($method, $path, $status, $started, LogEntry::LEVEL_ERROR, $message, $options, $body);
+
+            if ($status === 401 || $status === 403) {
+                // Nothing reaches Moneybird until a person fixes the token, and Moneybird will not
+                // say so twice. Fail-open: the caller still gets the exception it expects.
+                Plugin::getInstance()->getAlerts()->noteAuthFailure(Craft::t('bird', 'Moneybird answered HTTP {status} to {method} {path}: {error}', [
+                    'status' => $status,
+                    'method' => strtoupper($method),
+                    'path' => $path,
+                    'error' => $message,
+                ]));
+            }
 
             throw new ApiException($message, $status, $body, $path);
         }
