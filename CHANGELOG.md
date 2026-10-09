@@ -10,6 +10,10 @@
 - `php craft bird/alerts/check` (put it, or `bird/sync/retry`, on cron to catch stalls) and `php craft bird/alerts/test`, and a **Send a test alert** button on the settings screen.
 - `Alerts::EVENT_BEFORE_NOTIFY`, to reword or swallow an alert.
 
+### Changed
+
+- The German and Dutch wording of "Moneybird rejected the API token" and "No Moneybird API token is configured" is reworded. Both reach failure alerts, and alert redaction masks whatever follows the word "Token" — "API-Token abgelehnt" arrived as "API-Token ••••".
+
 ## 5.0.1 - 2026-08-26
 
 ### Fixed

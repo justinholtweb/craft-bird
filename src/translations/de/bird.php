@@ -9,7 +9,7 @@
  */
 return [
     '(credit)' => '(Gutschrift)',
-    '401: Moneybird rejected the API token.' => '401: Moneybird hat das API-Token abgelehnt.',
+    '401: Moneybird rejected the API token.' => '401: Moneybird lehnt das API-Token ab.',
     '403: the token is missing the scope this call needs.' => '403: dem Token fehlt der Scope, den dieser Aufruf braucht.',
     '404: Moneybird has no such record.' => '404: Moneybird kennt keinen solchen Datensatz.',
     '429: Moneybird’s rate limit was hit (150 requests per 5 minutes).' => '429: Moneybirds Rate Limit wurde erreicht (150 Anfragen je 5 Minuten).',
@@ -194,7 +194,7 @@ return [
     'Never — only when I say so' => 'Nie — nur wenn ich es sage',
     'No local document for Moneybird invoice {id}.' => 'Kein lokaler Beleg für Moneybird-Rechnung {id}.',
     'No Moneybird administration is configured.' => 'Es ist keine Moneybird-Verwaltung eingerichtet.',
-    'No Moneybird API token is configured.' => 'Es ist kein Moneybird-API-Token eingerichtet.',
+    'No Moneybird API token is configured.' => 'Bird fehlt noch das Moneybird-API-Token.',
     'No Moneybird tax rate is mapped for 0%. Add it to the tax table in Bird’s settings.' => 'Für 0% ist kein Moneybird-Steuersatz zugeordnet. Ergänzen Sie ihn in der Steuertabelle in Birds Einstellungen.',
     'No Moneybird tax rate is mapped for {percentage}% in {country}. Add it to the OSS table in Bird’s settings, or map {percentage}% in the main tax table.' => 'Für {percentage}% in {country} ist kein Moneybird-Steuersatz zugeordnet. Ergänzen Sie ihn in der OSS-Tabelle in Birds Einstellungen, oder ordnen Sie {percentage}% in der Haupttabelle zu.',
     'No Moneybird tax rate is mapped for {percentage}%. Add it to the tax table in Bird’s settings.' => 'Für {percentage}% ist kein Moneybird-Steuersatz zugeordnet. Ergänzen Sie ihn in der Steuertabelle in Birds Einstellungen.',

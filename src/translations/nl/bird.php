@@ -9,7 +9,7 @@
  */
 return [
     '(credit)' => '(credit)',
-    '401: Moneybird rejected the API token.' => '401: Moneybird heeft het API-token geweigerd.',
+    '401: Moneybird rejected the API token.' => '401: Moneybird weigert het API-token.',
     '403: the token is missing the scope this call needs.' => '403: het token mist de scope die deze aanroep nodig heeft.',
     '404: Moneybird has no such record.' => '404: Moneybird kent zo’n record niet.',
     '429: Moneybird’s rate limit was hit (150 requests per 5 minutes).' => '429: de ratelimiet van Moneybird is bereikt (150 verzoeken per 5 minuten).',
@@ -194,7 +194,7 @@ return [
     'Never — only when I say so' => 'Nooit — alleen als ik het zeg',
     'No local document for Moneybird invoice {id}.' => 'Geen lokaal document voor Moneybird-factuur {id}.',
     'No Moneybird administration is configured.' => 'Er is geen Moneybird-administratie ingesteld.',
-    'No Moneybird API token is configured.' => 'Er is geen Moneybird-API-token ingesteld.',
+    'No Moneybird API token is configured.' => 'Bird heeft nog geen Moneybird-API-token.',
     'No Moneybird tax rate is mapped for 0%. Add it to the tax table in Bird’s settings.' => 'Er is geen Moneybird-btw-tarief toegewezen voor 0%. Voeg het toe aan de btw-tabel bij de instellingen van Bird.',
     'No Moneybird tax rate is mapped for {percentage}% in {country}. Add it to the OSS table in Bird’s settings, or map {percentage}% in the main tax table.' => 'Er is geen Moneybird-btw-tarief toegewezen voor {percentage}% in {country}. Voeg het toe aan de OSS-tabel bij de instellingen van Bird, of wijs {percentage}% toe in de hoofdtabel.',
     'No Moneybird tax rate is mapped for {percentage}%. Add it to the tax table in Bird’s settings.' => 'Er is geen Moneybird-btw-tarief toegewezen voor {percentage}%. Voeg het toe aan de btw-tabel bij de instellingen van Bird.',

@@ -387,6 +387,23 @@ try {
         return !str_contains($out, 'eyJhbGciOiJIUzI1NiJ9') && !str_contains($out, 'hunter22xyz') && !str_contains($out, 'Sup3rS3cret') ?: $out;
     });
 
+    check('Bird’s own messages that reach an alert survive redaction whole, in every language', function() use ($alerts) {
+        // The credential pattern eats the word after "Token " — "API-Token abgelehnt" lost its verb.
+        $bad = [];
+
+        foreach (['en', 'de', 'nl', 'nl-BE', 'fr-BE'] as $language) {
+            foreach (['401: Moneybird rejected the API token.', '403: the token is missing the scope this call needs.', 'No Moneybird API token is configured.'] as $message) {
+                $text = Craft::t('bird', $message, [], $language);
+
+                if ($alerts->redact($text) !== $text) {
+                    $bad[] = "$language: " . $alerts->redact($text);
+                }
+            }
+        }
+
+        return $bad === [] ?: implode(' | ', $bad);
+    });
+
     check('tags are stripped and the length is capped', function() use ($alerts) {
         $out = $alerts->redact('<html><body>' . str_repeat('x', 3000) . '</body></html>');
 
