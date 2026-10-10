@@ -6,9 +6,14 @@ use Craft;
 use craft\base\Component;
 use craft\commerce\elements\Order;
 use craft\commerce\Plugin as Commerce;
+use craft\db\Query;
 use craft\helpers\DateTimeHelper;
+use craft\helpers\Db;
+use craft\helpers\StringHelper;
 use DateTime;
+use justinholtweb\bird\db\Table;
 use justinholtweb\bird\exceptions\ApiException;
+use justinholtweb\bird\helpers\Secret;
 use justinholtweb\bird\models\Document;
 use justinholtweb\bird\models\LogEntry;
 use justinholtweb\bird\Plugin;
@@ -50,6 +55,54 @@ class Webhooks extends Component
     ];
 
     /**
+     * The webhook Bird installed on this environment, with its secret decrypted, or null.
+     *
+     * `secret` is null when it can't be decrypted — Craft's security key changed — which means
+     * removing the webhook and installing it again.
+     *
+     * @return array{webhookId: string, secret: ?string}|null
+     */
+    public function installed(): ?array
+    {
+        $row = (new Query())->select(['webhookId', 'secret'])->from(Table::WEBHOOK)->orderBy(['id' => SORT_DESC])->one();
+
+        return $row ? ['webhookId' => (string)$row['webhookId'], 'secret' => Secret::decrypt($row['secret'] ?? null)] : null;
+    }
+
+    /**
+     * The secret a delivery is verified with: the installed webhook's, else the `webhookSecret`
+     * setting — an `$ENV` reference for a webhook made outside Bird, or a literal stored before 5.0.2.
+     */
+    public function signingSecret(): string
+    {
+        $installed = $this->installed();
+
+        if ($installed !== null && ($installed['secret'] ?? '') !== '') {
+            return (string)$installed['secret'];
+        }
+
+        return Plugin::getInstance()->getSettings()->getParsedWebhookSecret();
+    }
+
+    /**
+     * Whether deliveries are accepted at all: a webhook Bird installed here, or the "Accept
+     * webhooks" setting for one made by hand. Installing no longer flips that setting, because it
+     * is project config and installing happens on the live site.
+     */
+    public function isAccepting(): bool
+    {
+        return $this->installed() !== null || Plugin::getInstance()->getSettings()->webhooksEnabled;
+    }
+
+    /**
+     * The installed webhook's id, falling back to the pre-5.0.2 setting.
+     */
+    public function webhookId(): string
+    {
+        return $this->installed()['webhookId'] ?? trim(Plugin::getInstance()->getSettings()->webhookId);
+    }
+
+    /**
      * Register the webhook with Moneybird and remember its id and secret.
      *
      * @return array{success: bool, message: string, secret?: string}
@@ -80,21 +133,15 @@ class Webhooks extends Component
 
         $webhookId = (string)($response['id'] ?? '');
         // Moneybird returns the signing secret exactly once, here. Losing it means deleting the
-        // webhook and making a new one, so it is stored immediately.
+        // webhook and making a new one, so it is stored immediately — encrypted, in Bird's own
+        // table. Before 5.0.2 it went into the plugin settings, and so into project config and git,
+        // where anyone with the repository could sign a "paid" webhook.
         $secret = (string)($response['secret'] ?? '');
-
-        $values = ['webhookId' => $webhookId, 'webhooksEnabled' => true];
-
-        if ($secret !== '') {
-            $values['webhookSecret'] = $secret;
-        }
-
-        $this->saveSettings($values);
+        $this->store($webhookId, $secret);
 
         return [
             'success' => true,
             'message' => Craft::t('bird', 'Moneybird will now tell this site when an invoice is paid.'),
-            'secret' => $secret,
         ];
     }
 
@@ -104,8 +151,7 @@ class Webhooks extends Component
     public function remove(): array
     {
         $plugin = Plugin::getInstance();
-        $settings = $plugin->getSettings();
-        $webhookId = trim($settings->webhookId);
+        $webhookId = $this->webhookId();
 
         if ($webhookId === '') {
             return ['success' => false, 'message' => Craft::t('bird', 'No webhook is installed.')];
@@ -121,7 +167,7 @@ class Webhooks extends Component
             }
         }
 
-        $this->saveSettings(['webhookId' => '', 'webhookSecret' => '', 'webhooksEnabled' => false]);
+        Craft::$app->getDb()->createCommand()->delete(Table::WEBHOOK)->execute();
 
         return ['success' => true, 'message' => Craft::t('bird', 'Webhook removed.')];
     }
@@ -288,18 +334,20 @@ class Webhooks extends Component
         return Craft::t('bird', 'Moved the order to {status}.', ['status' => $status->name]);
     }
 
-    /**
-     * Project config writes are buffered until the request ends. A console command or a queue job
-     * has no request end, so the flush has to be explicit.
-     *
-     * @param array<string, mixed> $values
-     */
-    private function saveSettings(array $values): void
+    private function store(string $webhookId, string $secret): void
     {
-        $plugin = Plugin::getInstance();
-        $settings = $plugin->getSettings()->toArray();
+        $db = Craft::$app->getDb();
+        $now = Db::prepareDateForDb(new DateTime());
 
-        Craft::$app->getPlugins()->savePluginSettings($plugin, array_merge($settings, $values));
-        Craft::$app->getProjectConfig()->saveModifiedConfigData();
+        $db->transaction(static function() use ($db, $webhookId, $secret, $now) {
+            $db->createCommand()->delete(Table::WEBHOOK)->execute();
+            $db->createCommand()->insert(Table::WEBHOOK, [
+                'webhookId' => $webhookId,
+                'secret' => Secret::encrypt($secret),
+                'dateCreated' => $now,
+                'dateUpdated' => $now,
+                'uid' => StringHelper::UUID(),
+            ])->execute();
+        });
     }
 }

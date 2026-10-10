@@ -1,7 +1,7 @@
 {
     "name": "justinholtweb/craft-bird",
     "description": "Moneybird bookkeeping for Craft Commerce — turn paid orders into Moneybird invoices with EU-correct VAT, keep contacts in sync, register payments and credit refunds.",
-    "version": "5.0.1",
+    "version": "5.0.2",
     "type": "craft-plugin",
     "keywords": [
         "craftcms",
@@ -53,5 +53,10 @@
         "documentationUrl": "https://github.com/justinholtweb/craft-bird/blob/main/README.md",
         "changelogUrl": "https://raw.githubusercontent.com/justinholtweb/craft-bird/main/CHANGELOG.md",
         "class": "justinholtweb\\bird\\Plugin"
+    },
+    "require-dev": {
+        "craftcms/ecs": "dev-main",
+        "craftcms/phpstan": "dev-main",
+        "phpstan/phpstan": "^1.12 || ^2.2"
     }
 }

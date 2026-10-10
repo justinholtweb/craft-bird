@@ -90,7 +90,7 @@ php craft bird/webhooks/remove
 ```
 
 **Webhook installeren** registreert hem en bewaart het ondertekeningsgeheim, dat Moneybird precies
-één keer teruggeeft, bij het aanmaken. Elke levering wordt daarna gecontroleerd tegen de header
+één keer teruggeeft, bij het aanmaken — versleuteld, in Birds eigen tabel, nooit in project config. Elke levering wordt daarna gecontroleerd tegen de header
 `Moneybird-Signature` — HMAC-SHA256 over `{timestamp}.{ruwe body}`, vergeleken in constante tijd, en
 geweigerd als de timestamp meer dan vijf minuten afwijkt. Tijdens het roteren van een geheim komen
 er meerdere handtekeningwaarden voorbij, dus elke match telt.

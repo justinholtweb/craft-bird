@@ -32,6 +32,7 @@ class Install extends Migration
     public function safeDown(): bool
     {
         $this->dropTableIfExists(Table::ALERTS);
+        $this->dropTableIfExists(Table::WEBHOOK);
         $this->dropTableIfExists(Table::LOG);
         $this->dropTableIfExists(Table::CONTACTS);
         $this->dropTableIfExists(Table::DOCUMENTS);
@@ -105,6 +106,25 @@ class Install extends Migration
             'dateUpdated' => $this->dateTime()->notNull(),
             'uid' => $this->uid(),
         ]);
+
+        $this->createTable(Table::WEBHOOK, self::webhookColumns($this));
+    }
+
+    /**
+     * The webhook Bird installed: one row. Runtime state rather than a setting, because the secret
+     * is a credential and installing happens on the live site, where project config is read-only.
+     */
+    public static function webhookColumns(Migration $migration): array
+    {
+        return [
+            'id' => $migration->primaryKey(),
+            'webhookId' => $migration->string(64)->notNull(),
+            // Secret::encrypt() output — base64 of Craft's encryptByKey().
+            'secret' => $migration->text(),
+            'dateCreated' => $migration->dateTime()->notNull(),
+            'dateUpdated' => $migration->dateTime()->notNull(),
+            'uid' => $migration->uid(),
+        ];
     }
 
     private function createIndexes(): void

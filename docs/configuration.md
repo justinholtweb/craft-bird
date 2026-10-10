@@ -112,9 +112,19 @@ older `register_payment` endpoint; Bird does not use it.
 | Setting | Notes |
 |---|---|
 | **Webhook URL** | Read-only. This is the URL to register. |
-| **Accept webhooks** | Off until you install one. |
-| **Signing secret** | Moneybird returns it exactly once, on create. **Install webhook** stores it for you. |
+| **Accept webhooks** | Only for a webhook you made in Moneybird yourself. One installed with **Install webhook** is accepted on its own. |
+| **Signing secret** | Only for a webhook you made yourself: an environment variable holding its secret, such as `$BIRD_WEBHOOK_SECRET`. **Install webhook** needs nothing here. |
 | **Paid order status** | Optionally move the Commerce order to this status when Moneybird says the invoice is paid. |
+
+**Install webhook** stores the signing secret Moneybird returns — exactly once, on create — in
+Bird's own database table, encrypted with your site's security key. It is never written to the
+settings, because settings are project config and project config is committed with your site.
+Installing is meant to happen on the live site, where admin changes are usually off and this screen
+is read-only: run `php craft bird/webhooks/install` there.
+
+Before 5.0.2 the secret *was* saved as a setting. Upgrading copies it into the table so the webhook
+keeps working, and the settings screen asks you to remove the copy in project config. If the
+repository has been shared, remove the webhook and install it again: that gives it a new secret.
 
 See [the webhook](usage#the-webhook) for what it is for and how it is verified.
 
@@ -141,7 +151,7 @@ explains each incident, the webhook and the Dashboard widget.
 |---|---|---|
 | **Log connections** | On | One row per request. |
 | **Keep payloads** | On | Request and response bodies, with tokens and secrets redacted. |
-| **Keep entries for** | 30 days | `bird/log/prune` is worth putting on a cron. |
+| **Keep entries for** | 30 days | `bird/log/prune` is worth putting on a cron. Pruning from the control panel is admin-only — it is the audit trail. |
 
 ## Config file
 

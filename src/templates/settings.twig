@@ -471,17 +471,37 @@
         <button type="button" class="btn" id="bird-install-webhook">{{ 'Install webhook'|t('bird') }}</button>
         <button type="button" class="btn" id="bird-remove-webhook">{{ 'Remove webhook'|t('bird') }}</button>
     </div>
+    {% set installedWebhook = plugin.getWebhooks().installed() %}
     <p class="light" id="bird-webhook-result">
-        {% if settings.webhookId %}
-            {{ 'Installed as {id}.'|t('bird', { id: settings.webhookId }) }}
+        {% if installedWebhook %}
+            {{ 'Installed as {id}. Its signing secret is stored in Bird’s own table, encrypted — not in project config.'|t('bird', { id: installedWebhook.webhookId }) }}
+            {% if installedWebhook.secret is null %}
+                <br><span class="error">{{ 'The secret can’t be decrypted, probably because the site’s security key changed. Remove the webhook and install it again.'|t('bird') }}</span>
+            {% endif %}
         {% else %}
-            {{ 'Not installed.'|t('bird') }}
+            {{ 'Not installed on this environment.'|t('bird') }}
         {% endif %}
     </p>
+    <p class="light">{{ 'Where admin changes are off, this screen is read-only; run `php craft bird/webhooks/install` there instead.'|t('bird') }}</p>
 </div>
+
+{% set literalSecret = settings.storesLiteralWebhookSecret() %}
+
+{% if literalSecret %}
+    <blockquote class="note warning">
+        <p>{{ 'A webhook signing secret is stored in Bird’s settings — and so in project config, which is committed with your site. Anyone with the repository could sign a “paid” webhook.'|t('bird') }}</p>
+        {% if installedWebhook %}
+            <p>{{ 'The installed webhook now keeps its secret in Bird’s own table, so this copy isn’t needed: tick “Remove it from project config” below and save. If the repository has been shared, remove the webhook and install it again, which gives it a new secret.'|t('bird') }}</p>
+        {% else %}
+            <p>{{ 'Put it in an environment variable and enter its name below instead — or install the webhook from this screen, which stores the secret in Bird’s own table. If the repository has been shared, make a new webhook in Moneybird.'|t('bird') }}</p>
+        {% endif %}
+    </blockquote>
+    {{ hiddenInput('webhookSecretKept', '1') }}
+{% endif %}
 
 {{ forms.lightswitchField({
     label: 'Accept webhooks'|t('bird'),
+    instructions: 'A webhook installed above is accepted on its own. Switch this on only for a webhook you created in Moneybird yourself.'|t('bird'),
     id: 'webhooksEnabled',
     name: 'webhooksEnabled',
     on: settings.webhooksEnabled
@@ -489,12 +509,22 @@
 
 {{ forms.autosuggestField({
     label: 'Signing secret'|t('bird'),
-    instructions: 'Moneybird shows this once, when the webhook is created. Bird stores it here; move it to an environment variable if you would rather it did not sit in project config.'|t('bird'),
+    instructions: 'Only for a webhook you created yourself: an environment variable holding its secret. Not the secret itself — settings are saved to project config.'|t('bird'),
     id: 'webhookSecret',
     name: 'webhookSecret',
-    value: settings.webhookSecret,
-    suggestEnvVars: true
+    value: literalSecret ? '' : settings.webhookSecret,
+    placeholder: literalSecret ? 'Leave empty to keep the stored secret'|t('bird') : '$BIRD_WEBHOOK_SECRET',
+    suggestEnvVars: true,
+    errors: settings.getErrors('webhookSecret')
 }) }}
+
+{% if literalSecret %}
+    {{ forms.checkboxField({
+        label: 'Remove it from project config'|t('bird'),
+        name: 'webhookSecretRemove',
+        value: '1'
+    }) }}
+{% endif %}
 
 {{ forms.selectField({
     label: 'Paid order status'|t('bird'),
@@ -640,6 +670,13 @@
 
 {% js %}
 (function() {
+    // Craft renders a plugin's settings inside a 'settings' namespace, which rewrites every id
+    // to `settings-…` — but not this script. Before 5.0.2 every lookup here missed, so every button
+    // on the screen did nothing. Both spellings are tried, so the screen works wherever it renders.
+    function byId(id) {
+        return document.getElementById('settings-' + id) || document.getElementById(id);
+    }
+
     function post(action, body) {
         return Craft.sendActionRequest('POST', action, { data: body || {} });
     }
@@ -649,7 +686,7 @@
     }
 
     function say(id, message, isError) {
-        var el = document.getElementById(id);
+        var el = byId(id);
         if (!el) { return; }
         el.textContent = message;
         el.style.color = isError ? '#cf1124' : '';
@@ -681,7 +718,7 @@
         new Garnish.Modal(modal, { resizable: true });
     }
 
-    var test = document.getElementById('bird-test');
+    var test = byId('bird-test');
     if (test) {
         test.addEventListener('click', function() {
             test.classList.add('loading');
@@ -693,7 +730,7 @@
         });
     }
 
-    var administrations = document.getElementById('bird-administrations');
+    var administrations = byId('bird-administrations');
     if (administrations) {
         administrations.addEventListener('click', function() {
             get('bird/settings/administrations').then(function(response) {
@@ -705,7 +742,7 @@
 
     [['bird-list-tax', 'taxRates', {{ 'Moneybird tax rates'|t('bird')|json_encode|raw }}],
      ['bird-list-ledger', 'ledgerAccounts', {{ 'Moneybird ledger accounts'|t('bird')|json_encode|raw }}]].forEach(function(entry) {
-        var button = document.getElementById(entry[0]);
+        var button = byId(entry[0]);
         if (!button) { return; }
         button.addEventListener('click', function() {
             button.classList.add('loading');
@@ -718,7 +755,7 @@
         });
     });
 
-    var suggest = document.getElementById('bird-suggest-tax');
+    var suggest = byId('bird-suggest-tax');
     if (suggest) {
         suggest.addEventListener('click', function() {
             suggest.classList.add('loading');
@@ -741,7 +778,7 @@
         });
     }
 
-    var install = document.getElementById('bird-install-webhook');
+    var install = byId('bird-install-webhook');
     if (install) {
         install.addEventListener('click', function() {
             install.classList.add('loading');
@@ -755,7 +792,7 @@
         });
     }
 
-    var testAlert = document.getElementById('bird-test-alert');
+    var testAlert = byId('bird-test-alert');
     if (testAlert) {
         testAlert.addEventListener('click', function() {
             testAlert.classList.add('loading');
@@ -769,7 +806,7 @@
         });
     }
 
-    var remove = document.getElementById('bird-remove-webhook');
+    var remove = byId('bird-remove-webhook');
     if (remove) {
         remove.addEventListener('click', function() {
             remove.classList.add('loading');

@@ -115,9 +115,21 @@ point de terminaison `register_payment` ; Bird ne l'utilise pas.
 | Réglage | Notes |
 |---|---|
 | **URL du webhook** | En lecture seule. C'est l'URL à enregistrer. |
-| **Accepter les webhooks** | Désactivé jusqu'à ce que vous en installiez un. |
-| **Secret de signature** | Moneybird ne le renvoie qu'une seule fois, à la création. **Installer le webhook** le conserve pour vous. |
+| **Accepter les webhooks** | Uniquement pour un webhook que vous avez créé vous-même dans Moneybird. Celui installé avec **Installer le webhook** est accepté de lui-même. |
+| **Secret de signature** | Uniquement pour un webhook que vous avez créé vous-même : une variable d'environnement contenant son secret, comme `$BIRD_WEBHOOK_SECRET`. **Installer le webhook** n'a besoin de rien ici. |
 | **Statut à la facture payée** | Fait éventuellement passer la commande Commerce à ce statut dès que Moneybird annonce la facture payée. |
+
+**Installer le webhook** conserve le secret de signature que Moneybird renvoie — une seule fois,
+à la création — chiffré avec la clé de sécurité de votre site, dans la table propre à Bird. Il n'est
+jamais écrit dans les réglages, car les réglages sont de la project config, et la project config est
+commitée avec votre site. L'installation se fait sur le site en production, où les modifications
+d'administration sont généralement désactivées et cet écran en lecture seule : exécutez-y
+`php craft bird/webhooks/install`.
+
+Avant la 5.0.2, le secret *était* enregistré comme réglage. La mise à jour le copie dans la table
+pour que le webhook continue de fonctionner, et l'écran de réglages vous demande de retirer la copie
+de la project config. Si le dépôt a été partagé, supprimez le webhook et réinstallez-le : il reçoit
+alors un nouveau secret.
 
 Voir [le webhook](usage#le-webhook) pour ce à quoi il sert et comment il est vérifié.
 
@@ -144,7 +156,7 @@ Un message quand un incident commence et un autre quand il se termine, en Lite c
 |---|---|---|
 | **Journaliser les connexions** | Activé | Une ligne par requête. |
 | **Conserver les charges utiles** | Activé | Corps des requêtes et des réponses, jetons et secrets caviardés. |
-| **Conserver les entrées pendant** | 30 jours | `bird/log/prune` mérite une tâche cron. |
+| **Conserver les entrées pendant** | 30 jours | `bird/log/prune` mérite une tâche cron. Purger depuis le panneau de contrôle est réservé aux administrateurs — c'est la piste d'audit. |
 
 ## Fichier de configuration
 

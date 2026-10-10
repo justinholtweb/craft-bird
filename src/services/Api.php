@@ -5,7 +5,6 @@ namespace justinholtweb\bird\services;
 use Craft;
 use craft\base\Component;
 use craft\helpers\Json;
-use GuzzleHttp\Client;
 use justinholtweb\bird\exceptions\ApiException;
 use justinholtweb\bird\models\LogEntry;
 use justinholtweb\bird\Plugin;

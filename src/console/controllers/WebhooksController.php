@@ -29,12 +29,6 @@ class WebhooksController extends Controller
 
         $this->stdout($result['message'] . "\n", $result['success'] ? Console::FG_GREEN : Console::FG_RED);
 
-        if (!empty($result['secret'])) {
-            $this->stdout("\nSigning secret (Moneybird only shows this once, and Bird has saved it):\n");
-            $this->stdout('  ' . $result['secret'] . "\n", Console::FG_YELLOW);
-            $this->stdout("Move it into an environment variable if you would rather it did not sit in project config.\n");
-        }
-
         return $result['success'] ? ExitCode::OK : ExitCode::UNSPECIFIED_ERROR;
     }
 
@@ -86,10 +80,17 @@ class WebhooksController extends Controller
     public function actionInfo(): int
     {
         $settings = Plugin::getInstance()->getSettings();
+        $webhooks = Plugin::getInstance()->getWebhooks();
+        $installed = $webhooks->installed();
 
         $this->stdout('URL:    ' . $settings->getWebhookUrl() . "\n");
-        $this->stdout('Id:     ' . ($settings->webhookId ?: '—') . "\n");
-        $this->stdout('Secret: ' . ($settings->getParsedWebhookSecret() !== '' ? 'set' : 'not set') . "\n");
+        $this->stdout('Id:     ' . ($webhooks->webhookId() ?: '—') . "\n");
+        $this->stdout('Secret: ' . match (true) {
+            $installed !== null && $installed['secret'] !== null => 'stored, encrypted',
+            $installed !== null => 'stored, but can’t be decrypted (security key changed?) — remove and install again',
+            $settings->getParsedWebhookSecret() !== '' => str_starts_with(trim($settings->webhookSecret), '$') ? 'from ' . trim($settings->webhookSecret) : 'in project config — remove it from the settings screen',
+            default => 'not set',
+        } . "\n");
         $this->stdout("Events:\n");
 
         foreach (Webhooks::EVENTS as $event) {

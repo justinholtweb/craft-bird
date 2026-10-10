@@ -148,7 +148,8 @@ Bird pushes invoices; Moneybird is where they get *paid* — matched against a b
 paid by hand. Without the webhook, your site's idea of "paid" is whatever the payment gateway said
 at checkout, which misses every bank transfer.
 
-**Install webhook** registers it and stores the signing secret Moneybird shows exactly once. Every
+**Install webhook** registers it and stores the signing secret Moneybird shows exactly once —
+encrypted, in Bird's own table, never in project config. Every
 delivery is verified against `Moneybird-Signature` — HMAC-SHA256 over `{timestamp}.{raw body}`,
 rejected if the timestamp is more than five minutes out. No secret, no signature, no stale
 timestamp, no request: it fails closed.

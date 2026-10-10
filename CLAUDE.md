@@ -52,8 +52,15 @@ totals that reconcile to the cent against a bank feed. Bird is those parts.
 - `{{%bird_contacts}}` — Craft user / email → Moneybird contact id, with a fingerprint of the last
   payload pushed so an unchanged customer costs no API call.
 - `{{%bird_log}}` — the connection log. No foreign key on `orderId`: a log row has to outlive the
-  order it describes, which is the whole point of keeping one.
-
+  order it describes, which is the whole point of keeping one. Clearing/pruning it from the CP is
+  admin-only.
+- `{{%bird_webhook}}` — the webhook Bird installed on *this environment*: its id and the signing
+  secret, `helpers\Secret`-encrypted (base64 of `encryptByKey`, as in Freshh). **Never a setting**:
+  settings are project config, and installing happens on the live site where admin changes are off.
+  `Webhooks::signingSecret()` / `isAccepting()` / `webhookId()` are the readers; the
+  `webhookSecret` setting is only an `$ENV` override for a hand-made webhook, and a literal is
+  refused unless it is the pre-5.0.2 stored value (which the screen never renders — the form posts
+  `webhookSecretKept`, read by `Settings::setAttributes()` as "unchanged").
 - `{{%bird_alerts}}` — the failure-alert latch, one row per incident, unique on `incident`.
 
 ### Failure alerts (ported from Erpy via Lexies, the Theme 1 reference)
@@ -153,6 +160,13 @@ Read out of `developer.moneybird.com`'s embedded OpenAPI schema, not its prose �
   `craft.bird.orderStatusOptions()` instead.
 - **A model hydrated from `SELECT *` needs every column as a property** — `LogEntry::$dateUpdated`
   exists only because `getEntryById()` reads the whole row and Yii throws on an unknown key.
+- **The settings script must look up `settings-` + id.** Craft renders plugin settings inside a
+  `settings` namespace, which rewrites every id but not the `{% js %}` block — so every button was
+  dead until 5.0.2. `byId()` tries both; `security.php` checks every lookup resolves.
+- **Never write a Twig tag inside a `{% js %}` comment** — Twig parses it, and the whole settings
+  screen 500s.
+- **`"“$reference”"` interpolates `$reference”`** — PHP identifiers may contain bytes 0x80–0xFF.
+  Brace variables next to typographic quotes; PHPStan catches it.
 - **Never mark plugin settings `required`**: Craft validates them wholesale, so one required
   attribute means a fresh install cannot save the screen that would set it.
 
@@ -185,7 +199,9 @@ No local PHP on this Mac. Everything runs inside the plugin-testing container:
 ```sh
 cd ~/Sites/plugin-testing
 ddev exec php /var/www/craft-bird/tests/integration/checks.php   # 161 checks
+ddev exec php /var/www/craft-bird/tests/integration/security.php # 22: webhook secret storage, migration, settings screen, log permissions
 docker exec -w /var/www/html ddev-plugin-testing-web php /var/www/craft-bird/tests/integration/alerts.php # 67: failure alerts, widget, banner, test action over HTTP
+docker exec -w /sites/craft-bird ddev-phpstan-runner-web bash -c 'vendor/bin/phpstan analyse --memory-limit=1G && vendor/bin/ecs check'
 ddev exec bash -c 'find /var/www/craft-bird/src -name "*.php" -print0 | xargs -0 -n1 php -l'
 ```
 

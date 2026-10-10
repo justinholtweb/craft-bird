@@ -115,9 +115,21 @@ Zahlungen gehen an `POST /sales_invoices/{id}/payments.json`. Moneybird hat den 
 | Einstellung | Hinweise |
 |---|---|
 | **Webhook-URL** | Nur lesbar. Das ist die URL, die Sie registrieren. |
-| **Webhooks annehmen** | Aus, bis Sie einen installieren. |
-| **Signaturgeheimnis** | Moneybird gibt es genau einmal zurück, beim Anlegen. **Webhook installieren** hinterlegt es für Sie. |
+| **Webhooks annehmen** | Nur für einen Webhook, den Sie selbst in Moneybird angelegt haben. Einer, der mit **Webhook installieren** installiert wurde, wird von selbst angenommen. |
+| **Signaturgeheimnis** | Nur für einen Webhook, den Sie selbst angelegt haben: eine Umgebungsvariable mit seinem Geheimnis, etwa `$BIRD_WEBHOOK_SECRET`. **Webhook installieren** braucht hier nichts. |
 | **Status bei bezahlt** | Setzt die Commerce-Bestellung auf Wunsch auf diesen Status, sobald Moneybird die Rechnung als bezahlt meldet. |
+
+**Webhook installieren** hinterlegt das Signaturgeheimnis, das Moneybird zurückgibt — genau
+einmal, beim Anlegen — verschlüsselt mit dem Sicherheitsschlüssel Ihrer Website in Birds eigener
+Datenbanktabelle. In die Einstellungen kommt es nie, denn Einstellungen sind Project Config, und die
+Project Config wird mit Ihrer Website committet. Installiert wird auf der Live-Website, wo
+Admin-Änderungen meist abgeschaltet sind und diese Seite schreibgeschützt ist: Führen Sie dort
+`php craft bird/webhooks/install` aus.
+
+Vor 5.0.2 *wurde* das Geheimnis als Einstellung gespeichert. Beim Update wird es in die Tabelle
+kopiert, damit der Webhook weiter funktioniert, und die Einstellungsseite bittet Sie, die Kopie in
+der Project Config zu entfernen. Wurde das Repository geteilt, entfernen Sie den Webhook und
+installieren ihn neu: Dann bekommt er ein neues Geheimnis.
 
 Siehe [den Webhook](usage#der-webhook) dazu, wofür er da ist und wie er geprüft wird.
 
@@ -144,7 +156,7 @@ Eine Nachricht, wenn ein Vorfall beginnt, und eine, wenn er vorbei ist, in Lite 
 |---|---|---|
 | **Verbindungen protokollieren** | An | Eine Zeile je Anfrage. |
 | **Payloads aufbewahren** | An | Request- und Response-Bodies, mit geschwärzten Tokens und Geheimnissen. |
-| **Einträge aufbewahren für** | 30 Tage | `bird/log/prune` gehört in einen Cron. |
+| **Einträge aufbewahren für** | 30 Tage | `bird/log/prune` gehört in einen Cron. Bereinigen über das Control Panel dürfen nur Admins — es ist der Prüfpfad. |
 
 ## Konfigurationsdatei
 

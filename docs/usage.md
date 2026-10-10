@@ -85,7 +85,7 @@ php craft bird/webhooks/remove
 ```
 
 **Install webhook** registers it and stores the signing secret, which Moneybird returns exactly
-once, on create. Every delivery is then verified against the `Moneybird-Signature` header —
+once, on create — encrypted, in Bird's own table, never in project config. Every delivery is then verified against the `Moneybird-Signature` header —
 HMAC-SHA256 over `{timestamp}.{raw body}`, compared in constant time, rejected if the timestamp is
 more than five minutes out. Several signature values appear during a secret rotation, so any match
 counts.

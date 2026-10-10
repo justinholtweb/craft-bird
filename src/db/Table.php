@@ -10,5 +10,6 @@ abstract class Table
     public const DOCUMENTS = '{{%bird_documents}}';
     public const CONTACTS = '{{%bird_contacts}}';
     public const LOG = '{{%bird_log}}';
+    public const WEBHOOK = '{{%bird_webhook}}';
     public const ALERTS = '{{%bird_alerts}}';
 }

@@ -106,15 +106,19 @@ contacts Moneybird existants pour qu'il corresponde.
 La vérification échoue en mode fermé, et il n'y a que quelques façons d'entrer :
 
 - **Aucun secret de signature enregistré.** Moneybird ne le renvoie qu'une seule fois, à la
-  création. Si le secret est perdu, supprimez le webhook et réinstallez-le —
-  `bird/webhooks/remove` puis `bird/webhooks/install`.
+  création, et Bird le conserve chiffré dans sa propre table, dans l'environnement qui l'a installé.
+  S'il est perdu — ou ne peut pas être déchiffré parce que la clé de sécurité du site a changé —,
+  supprimez le webhook et réinstallez-le : `bird/webhooks/remove` puis `bird/webhooks/install`, sur
+  le site en production.
 - **Horodatage périmé.** Les livraisons de plus de cinq minutes sont rejetées. Vérifiez l'horloge du
   serveur.
 - **Le corps a été modifié en transit.** La signature porte sur les octets *bruts*. Un proxy qui
   resérialise le JSON la casse.
-- **Accepter les webhooks est désactivé.** Installer le webhook ne l'active pas tout seul.
+- **Le webhook a été installé dans un autre environnement.** Son secret se trouve dans la base de
+  données de cet environnement, pas dans la project config : un webhook installé en staging est donc
+  inconnu de la production. Installez-le là où Moneybird doit envoyer.
 
-`php craft bird/webhooks/info` montre ce qui est enregistré et si un secret est conservé.
+`php craft bird/webhooks/info` montre ce qui est enregistré et d'où vient le secret.
 
 ## Un envoi est mort en route et je crois qu'il a comptabilisé deux fois
 

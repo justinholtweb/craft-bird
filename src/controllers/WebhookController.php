@@ -37,11 +37,11 @@ class WebhookController extends Controller
         $settings = $plugin->getSettings();
         $request = Craft::$app->getRequest();
 
-        if (!$plugin->isPro() || !$settings->webhooksEnabled) {
+        if (!$plugin->isPro() || !$plugin->getWebhooks()->isAccepting()) {
             return $this->respond(404, ['message' => 'Not found']);
         }
 
-        $secret = $settings->getParsedWebhookSecret();
+        $secret = $plugin->getWebhooks()->signingSecret();
 
         if ($secret === '') {
             $this->log(LogEntry::LEVEL_ERROR, Craft::t('bird', 'A webhook arrived but no signing secret is configured.'), null);

@@ -84,7 +84,7 @@ class InspectController extends Controller
         $order = $this->findOrder($reference);
 
         if ($order === null) {
-            $this->stderr("No order matches “$reference”.\n", Console::FG_RED);
+            $this->stderr("No order matches “{$reference}”.\n", Console::FG_RED);
 
             return ExitCode::DATAERR;
         }

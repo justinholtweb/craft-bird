@@ -5,7 +5,9 @@
 {% set selectedSubnavItem = 'log' %}
 
 {% block actionButton %}
-    <button type="button" class="btn" id="bird-prune">{{ 'Prune old entries'|t('bird') }}</button>
+    {% if currentUser.admin %}
+        <button type="button" class="btn" id="bird-prune">{{ 'Prune old entries'|t('bird') }}</button>
+    {% endif %}
 {% endblock %}
 
 {% block content %}

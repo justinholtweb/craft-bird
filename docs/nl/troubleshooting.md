@@ -103,15 +103,19 @@ Moneybird-contacten passend te zetten.
 De controle faalt gesloten, en er zijn maar een paar manieren naar binnen:
 
 - **Geen ondertekeningsgeheim opgeslagen.** Moneybird geeft het precies één keer terug, bij het
-  aanmaken. Is het geheim kwijt, verwijder de webhook en installeer hem opnieuw —
-  `bird/webhooks/remove` en dan `bird/webhooks/install`.
+  aanmaken, en Bird bewaart het versleuteld in zijn eigen tabel op de omgeving die het installeerde.
+  Is het kwijt — of kan het niet worden ontsleuteld omdat de beveiligingssleutel van de site is
+  gewijzigd — verwijder de webhook en installeer hem opnieuw: `bird/webhooks/remove` en dan
+  `bird/webhooks/install`, op de live site.
 - **Verlopen timestamp.** Leveringen van meer dan vijf minuten oud worden geweigerd. Controleer de
   klok van de server.
 - **De body is onderweg gewijzigd.** De handtekening gaat over de *ruwe* bytes. Een proxy die de
   JSON opnieuw serialiseert breekt hem.
-- **Webhooks accepteren staat uit.** De webhook installeren zet dat niet vanzelf aan.
+- **De webhook is op een andere omgeving geïnstalleerd.** Het geheim staat in de database van die
+  omgeving, niet in project config, dus een webhook die op staging is geïnstalleerd kent productie
+  niet. Installeer hem waar Moneybird naartoe moet posten.
 
-`php craft bird/webhooks/info` toont wat er geregistreerd is en of er een geheim is opgeslagen.
+`php craft bird/webhooks/info` toont wat er geregistreerd is en waar het geheim vandaan komt.
 
 ## Een push is halverwege gesneuveld en ik denk dat er dubbel geboekt is
 

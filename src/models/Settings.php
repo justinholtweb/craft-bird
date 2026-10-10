@@ -246,12 +246,19 @@ class Settings extends Model
     public bool $webhooksEnabled = false;
 
     /**
-     * The signing secret Moneybird returned when the webhook was created. Env-parseable.
+     * For a webhook made outside Bird: an environment variable holding its signing secret
+     * (`$BIRD_WEBHOOK_SECRET`). One Bird installs keeps its secret in its own table, encrypted —
+     * {@see \justinholtweb\bird\services\Webhooks::signingSecret()}.
+     *
+     * Before 5.0.2 the installed secret was saved here, literally, and so committed with project
+     * config. A literal is now refused unless it is that already-stored value, which the settings
+     * screen never renders and asks to remove.
      */
     public string $webhookSecret = '';
 
     /**
-     * The id of the webhook Bird installed, so it can be removed again.
+     * Before 5.0.2, the id of the webhook Bird installed. Now kept in Bird's own table; read only as
+     * a fallback for an install that hasn't run the 5.0.2 migration's copy.
      */
     public string $webhookId = '';
 
@@ -372,6 +379,7 @@ class Settings extends Model
             [['contactCustomerIdSource'], 'in', 'range' => ['userId', 'email', 'orderNumber', 'none']],
             [['sendDeliveryMethod'], 'in', 'range' => ['Email', 'Simplerinvoicing', 'Post', 'Manual']],
             [['apiToken', 'administrationId', 'webhookSecret'], 'string'],
+            [['webhookSecret'], 'validateWebhookSecret'],
             [['taxRateMap', 'ossTaxRateMap', 'ledgerAccountMap'], 'safe'],
             [['alertOnDocuments', 'alertOnAuthFailure', 'allowPrivateAlertWebhookHosts'], 'boolean'],
             [['alertDocumentThreshold'], 'integer', 'min' => 1, 'max' => 10000],
@@ -435,6 +443,51 @@ class Settings extends Model
         return $validOnly
             ? array_values(array_filter($list, static fn(string $a) => filter_var($a, FILTER_VALIDATE_EMAIL) !== false))
             : $list;
+    }
+
+    /**
+     * The settings screen never renders a stored literal secret, so it posts an empty field and
+     * `webhookSecretKept`. Empty plus the flag means "unchanged" — unless "Remove it" was ticked.
+     */
+    public function setAttributes($values, $safeOnly = true): void
+    {
+        if (is_array($values)) {
+            if (!empty($values['webhookSecretKept']) && trim((string)($values['webhookSecret'] ?? '')) === '') {
+                if (empty($values['webhookSecretRemove'])) {
+                    unset($values['webhookSecret']);
+                } else {
+                    $values['webhookSecret'] = '';
+                }
+            }
+
+            unset($values['webhookSecretKept'], $values['webhookSecretRemove']);
+        }
+
+        parent::setAttributes($values, $safeOnly);
+    }
+
+    /**
+     * Whether the setting holds a secret itself rather than naming an environment variable — and
+     * so sits in project config. Only an install from before 5.0.2 can be in this state.
+     */
+    public function storesLiteralWebhookSecret(): bool
+    {
+        $value = trim($this->webhookSecret);
+
+        return $value !== '' && !str_starts_with($value, '$');
+    }
+
+    public function validateWebhookSecret(string $attribute): void
+    {
+        if (!$this->storesLiteralWebhookSecret()) {
+            return;
+        }
+
+        $stored = Craft::$app->getProjectConfig()->get('plugins.bird.settings.webhookSecret');
+
+        if (!is_string($stored) || trim($stored) !== trim($this->webhookSecret)) {
+            $this->addError($attribute, Craft::t('bird', 'Enter an environment variable, such as `$BIRD_WEBHOOK_SECRET`, not the secret itself: settings are saved to project config, which is committed with your site. A webhook Bird installs needs nothing here.'));
+        }
     }
 
     // Env-parsed accessors

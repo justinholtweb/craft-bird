@@ -4,7 +4,6 @@ namespace justinholtweb\bird\models;
 
 use Craft;
 use craft\base\Model;
-use craft\helpers\DateTimeHelper;
 use DateTime;
 use justinholtweb\bird\Plugin;
 
@@ -87,15 +86,9 @@ class Document extends Model
      */
     public function init(): void
     {
+        // Dates need nothing here: craft\base\Model typecasts the config against the typed
+        // properties before they are assigned.
         parent::init();
-
-        foreach (['dateSent', 'datePaid', 'dateSynced', 'dateCreated', 'dateUpdated'] as $attribute) {
-            $value = $this->$attribute;
-
-            if ($value !== null && !$value instanceof DateTime) {
-                $this->$attribute = DateTimeHelper::toDateTime($value) ?: null;
-            }
-        }
 
         $this->total = (float)$this->total;
         $this->totalPaid = (float)$this->totalPaid;

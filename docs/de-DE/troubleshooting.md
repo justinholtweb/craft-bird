@@ -103,16 +103,20 @@ Moneybird-Kontakten passend zu setzen.
 
 Die Prüfung scheitert geschlossen, und es gibt nur wenige Wege hinein:
 
-- **Kein Signaturgeheimnis hinterlegt.** Moneybird gibt es genau einmal zurück, beim Anlegen. Ist
-  das Geheimnis verloren, entfernen Sie den Webhook und installieren ihn erneut —
-  `bird/webhooks/remove`, dann `bird/webhooks/install`.
+- **Kein Signaturgeheimnis hinterlegt.** Moneybird gibt es genau einmal zurück, beim Anlegen, und
+  Bird bewahrt es verschlüsselt in seiner eigenen Tabelle auf der Umgebung auf, die es installiert
+  hat. Ist es verloren — oder lässt es sich nicht entschlüsseln, weil sich der Sicherheitsschlüssel
+  der Website geändert hat —, entfernen Sie den Webhook und installieren ihn erneut:
+  `bird/webhooks/remove`, dann `bird/webhooks/install`, auf der Live-Website.
 - **Veralteter Zeitstempel.** Zustellungen, die älter als fünf Minuten sind, werden abgelehnt.
   Prüfen Sie die Uhr des Servers.
 - **Der Body wurde unterwegs verändert.** Die Signatur geht über die *rohen* Bytes. Ein Proxy, der
   das JSON neu serialisiert, bricht sie.
-- **Webhooks annehmen ist aus.** Den Webhook zu installieren schaltet das nicht von selbst ein.
+- **Der Webhook wurde in einer anderen Umgebung installiert.** Sein Geheimnis liegt in der Datenbank
+  dieser Umgebung, nicht in der Project Config, ein auf Staging installierter Webhook ist der
+  Produktion also unbekannt. Installieren Sie ihn dort, wohin Moneybird senden soll.
 
-`php craft bird/webhooks/info` zeigt, was registriert ist und ob ein Geheimnis hinterlegt ist.
+`php craft bird/webhooks/info` zeigt, was registriert ist und woher das Geheimnis kommt.
 
 ## Ein Push ist auf halbem Weg gestorben und ich glaube, es wurde doppelt gebucht
 

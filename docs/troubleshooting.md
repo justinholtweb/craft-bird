@@ -97,15 +97,18 @@ to match is the fix.
 
 Verification fails closed, and there are only a few ways in:
 
-- **No signing secret stored.** Moneybird returns it exactly once, on create. If the secret was
-  lost, remove the webhook and install it again — `bird/webhooks/remove` then
-  `bird/webhooks/install`.
+- **No signing secret stored.** Moneybird returns it exactly once, on create, and Bird keeps it
+  encrypted in its own table on the environment that installed it. If it was lost — or can't be
+  decrypted because the site's security key changed — remove the webhook and install it again:
+  `bird/webhooks/remove` then `bird/webhooks/install`, on the live site.
 - **Stale timestamp.** Deliveries more than five minutes old are rejected. Check the server clock.
 - **The body was modified in transit.** The signature is over the *raw* bytes. A proxy that
   re-serializes JSON breaks it.
-- **Accept webhooks is off.** Installing the webhook does not switch it on by itself.
+- **The webhook was installed on another environment.** Its secret lives in that environment's
+  database, not in project config, so a webhook installed on staging isn't known to production.
+  Install it where Moneybird should post.
 
-`php craft bird/webhooks/info` shows what is registered and whether a secret is stored.
+`php craft bird/webhooks/info` shows what is registered and where the secret comes from.
 
 ## A push died halfway and I think it double-booked
 

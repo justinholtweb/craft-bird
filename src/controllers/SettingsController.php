@@ -126,6 +126,7 @@ class SettingsController extends Controller
 
         $home = $settings->getHomeCountry();
         $rows = [];
+        /** @var array<int|string, true> $seen PHP stores the key '0' as int 0 */
         $seen = [];
 
         foreach ($this->commercePercentages() as $percentage) {

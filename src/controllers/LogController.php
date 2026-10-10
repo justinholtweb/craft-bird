@@ -64,9 +64,15 @@ class LogController extends Controller
         ]);
     }
 
+    /**
+     * Pruning and clearing destroy the audit trail of what was sent to Moneybird and what came
+     * back, so they are an admin's call (as in craft-freshh). Before 5.0.2 "View the connection
+     * log" was enough to wipe it.
+     */
     public function actionPrune(): Response
     {
         $this->requirePostRequest();
+        $this->requireAdmin(false);
 
         $days = (int)Craft::$app->getRequest()->getBodyParam('days', 0);
         $deleted = Plugin::getInstance()->getLog()->prune($days > 0 ? $days : null);
@@ -77,6 +83,7 @@ class LogController extends Controller
     public function actionClear(): Response
     {
         $this->requirePostRequest();
+        $this->requireAdmin(false);
 
         $deleted = Plugin::getInstance()->getLog()->clear();
 

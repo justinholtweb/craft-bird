@@ -114,9 +114,20 @@ Betalingen gaan naar `POST /sales_invoices/{id}/payments.json`. Moneybird heeft 
 | Instelling | Toelichting |
 |---|---|
 | **Webhook-URL** | Alleen-lezen. Dit is de URL die je registreert. |
-| **Webhooks accepteren** | Uit tot je er een installeert. |
-| **Ondertekeningsgeheim** | Moneybird geeft dit precies één keer terug, bij het aanmaken. **Webhook installeren** bewaart het voor je. |
+| **Webhooks accepteren** | Alleen voor een webhook die je zelf in Moneybird hebt aangemaakt. Een webhook die met **Webhook installeren** is geïnstalleerd, wordt vanzelf geaccepteerd. |
+| **Ondertekeningsgeheim** | Alleen voor een webhook die je zelf hebt aangemaakt: een omgevingsvariabele met het geheim, zoals `$BIRD_WEBHOOK_SECRET`. **Webhook installeren** heeft hier niets nodig. |
 | **Status bij betaald** | Verzet de Commerce-bestelling desgewenst naar deze status zodra Moneybird zegt dat de factuur betaald is. |
+
+**Webhook installeren** bewaart het ondertekeningsgeheim dat Moneybird teruggeeft — precies één
+keer, bij het aanmaken — versleuteld met de beveiligingssleutel van je site in Birds eigen
+databasetabel. Het komt nooit in de instellingen, want instellingen zijn project config en project
+config wordt met je site gecommit. Installeren hoort op de live site te gebeuren, waar admin changes
+meestal uit staan en dit scherm alleen-lezen is: voer daar `php craft bird/webhooks/install` uit.
+
+Vóór 5.0.2 werd het geheim wél als instelling opgeslagen. Bij het upgraden wordt het naar de tabel
+gekopieerd zodat de webhook blijft werken, en het instellingenscherm vraagt je de kopie in project
+config te verwijderen. Is de repository gedeeld, verwijder de webhook dan en installeer hem
+opnieuw: dan krijgt hij een nieuw geheim.
 
 Zie [de webhook](usage#de-webhook) voor waar hij voor is en hoe hij gecontroleerd wordt.
 
@@ -143,7 +154,7 @@ legt elk incident, de webhook en de dashboardwidget uit.
 |---|---|---|
 | **Verbindingen loggen** | Aan | Eén regel per verzoek. |
 | **Payloads bewaren** | Aan | Request- en response-bodies, met tokens en geheimen weggelakt. |
-| **Regels bewaren gedurende** | 30 dagen | `bird/log/prune` is het waard om in een cron te zetten. |
+| **Regels bewaren gedurende** | 30 dagen | `bird/log/prune` is het waard om in een cron te zetten. Snoeien vanuit het configuratiescherm kan alleen een admin — het is het controlespoor. |
 
 ## Configuratiebestand
 
