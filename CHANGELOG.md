@@ -1,7 +1,6 @@
 # Release Notes for Bird
 
-## Unreleased
-
+## 5.1.0 - 2026-10-10
 ### Added
 
 - **Failure alerts.** One email — and optionally a Slack, Teams or signed JSON webhook — when booking into Moneybird gets into trouble, and one when it recovers, never one per order. Three incidents: orders that failed to book (Moneybird refused them, or a VAT rate or contact is missing), Moneybird refusing the API token (a 401 or 403), and booking that has stalled — completed orders still not in Moneybird hours after the trigger said they were due, which is what a queue that is not running looks like. Set them up under **Settings → Plugins → Bird → Alerts**; nothing is sent until you add recipients or a webhook. In Lite and Pro.
